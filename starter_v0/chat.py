@@ -63,10 +63,11 @@ def tool_results_message(events: list[dict[str, Any]]) -> dict[str, str]:
             "TOOL_RESULTS_JSON:\n"
             f"{json_text(events, max_chars=24000)}\n\n"
             "Use only these tool results as source evidence for the user's request. "
+            "If the user asked to trace a story and you have citation links but no source map yet, call trace_source_chain. "
             "If the user requested a Telegram post and has not approved the exact text, "
             "call clarify with response_type=yes_no and include the exact proposed text. "
-            "Use the returned markdown verbatim if an evidence or metric card is ready. "
-            "If the user requested only a card, show it with its available source links. "
+            "Use the returned markdown verbatim if a card or source map is ready. "
+            "If the user requested only a card or source map, show it with its available source links. "
             "If the user asked for a digest and the items are ready, call the formatting tool. "
             "Otherwise answer directly with cited sources when available."
         ),

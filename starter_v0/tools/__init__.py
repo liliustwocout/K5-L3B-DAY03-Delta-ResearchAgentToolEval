@@ -19,6 +19,7 @@ from .policy.tool import search_company_policy
 from .social_search.tool import search_tweets
 from .send.tool import send_telegram
 from .lookup.tool import web_search
+from .trace_source_chain.tool import trace_source_chain
 
 
 # NOTE (starter_v0): tool names here are intentionally vague. These keys are the
@@ -39,6 +40,7 @@ TOOL_FUNCTIONS = {
     "paper_text": get_arxiv_paper_text,
     "build_evidence_card": build_evidence_card,
     "build_metric_delta_card": build_metric_delta_card,
+    "trace_source_chain": trace_source_chain,
 }
 
 

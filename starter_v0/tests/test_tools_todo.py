@@ -217,3 +217,67 @@ def test_metric_card_rejects_non_numeric_observation() -> None:
 
     assert card["error"] == "ValueError"
     assert "current.value" in card["message"]
+
+
+def test_source_chain_counts_three_reports_using_the_same_origin() -> None:
+    origin = "https://example.org/press"
+    result = TOOL_FUNCTIONS["trace_source_chain"]([
+        {"url": "https://example.com/a", "cites": [origin, origin]},
+        {"url": "https://example.com/a", "cites": [origin]},
+        {"url": "https://example.com/b", "cites": [origin]},
+        {"url": "https://example.com/c", "cites": [origin]},
+        {"url": origin, "title": "Thông cáo", "cites": []},
+    ])
+
+    assert result["entry_count"] == 3
+    assert result["roots"] == [{"url": origin, "title": "Thông cáo", "article_count": 3}]
+    assert len(result["edges"]) == 3
+    assert f"[Nguồn 1]({origin})" in result["markdown"]
+
+
+def test_source_chain_traces_two_separate_origins_through_intermediate_articles() -> None:
+    relay = "https://example.com/relay"
+    first, second = "https://example.org/first", "https://example.org/second"
+    result = TOOL_FUNCTIONS["trace_source_chain"]([
+        {"url": "https://example.com/a", "cites": [relay]},
+        {"url": relay, "cites": [first]},
+        {"url": "https://example.com/b", "cites": [second]},
+        {"url": first, "cites": []},
+        {"url": second, "cites": []},
+    ])
+
+    assert result["entry_count"] == 2
+    assert {root["url"]: root["article_count"] for root in result["roots"]} == {first: 1, second: 1}
+    assert result["unresolved_urls"] == []
+
+
+def test_source_chain_marks_an_unavailable_citation_as_unresolved() -> None:
+    unavailable = "https://example.org/unavailable"
+    result = TOOL_FUNCTIONS["trace_source_chain"]([
+        {"url": "https://example.com/a", "cites": [unavailable]},
+    ])
+
+    assert result["roots"] == []
+    assert result["unresolved_urls"] == [unavailable]
+    assert result["nodes"][-1]["kind"] == "unresolved"
+
+
+def test_source_chain_returns_error_for_circular_citations() -> None:
+    first, second = "https://example.org/first", "https://example.org/second"
+    result = TOOL_FUNCTIONS["trace_source_chain"]([
+        {"url": first, "cites": [second]},
+        {"url": second, "cites": [first]},
+    ])
+
+    assert result["error"] == "ValueError"
+    assert "cycle" in result["message"]
+    assert "markdown" not in result
+
+
+def test_source_chain_returns_error_for_malformed_citation_input() -> None:
+    result = TOOL_FUNCTIONS["trace_source_chain"]([
+        {"url": "https://example.com/a", "cites": "https://example.org/press"},
+    ])
+
+    assert result["error"] == "ValueError"
+    assert "articles[0].cites" in result["message"]
