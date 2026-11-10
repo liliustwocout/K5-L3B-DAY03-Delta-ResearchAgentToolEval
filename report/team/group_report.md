@@ -95,11 +95,11 @@ Lấy từ `starter_v0/transcripts/*.transcript.json`.
 
 | Item | Evidence File | What Worked | Risk / Guardrail |
 |---|---|---|---|
-| Tool mới (`tools/<tên>/`) |  |  |  |
-| Unit test tool mới (≥ 3 test/tool) | `pytest` output (0 failed) |  |  |
+| `build_evidence_card` | [Tool và contract](../../starter_v0/tools/build_evidence_card/TOOL.md) | Nhóm nguồn ủng hộ, mâu thuẫn và chưa đủ rõ thành thẻ Markdown có link. | Kết luận dựa trên nhãn bằng chứng đầu vào. Agent dùng luồng xác nhận trước khi gửi Telegram. |
+| Unit test `build_evidence_card` | [test_tools_todo.py](../../starter_v0/tests/test_tools_todo.py) | 4 test mới đạt. Toàn suite 71 đạt, 0 lỗi, 14 TODO cũ được bỏ qua. | Test offline, gồm nhãn không hợp lệ và URL thiếu hostname. |
 | UI (lệnh chạy + link dùng thử) |  |  |  |
 
-Tool unit tests: số test đã viết, và một ví dụ lỗi mà unit test bắt được nhưng eval không bắt được.
+Unit test phát hiện URL thiếu hostname và kiểm tra tool trả error dict. Case eval `G01_evidence_card_conflicting_reports` chỉ chấm model có chọn đúng tool.
 
 ### B5. Bonus Evidence
 

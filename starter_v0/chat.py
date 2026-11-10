@@ -62,8 +62,13 @@ def tool_results_message(events: list[dict[str, Any]]) -> dict[str, str]:
         "content": (
             "TOOL_RESULTS_JSON:\n"
             f"{json_text(events, max_chars=24000)}\n\n"
-            "Use only these tool results. If the user asked for a digest and the items are ready, "
-            "call the formatting tool. Otherwise answer the user directly with cited sources when available."
+            "Use only these tool results as source evidence for the user's request. "
+            "If the user requested a Telegram post and has not approved the exact text, "
+            "call clarify with response_type=yes_no and include the exact proposed text. "
+            "Use the returned markdown verbatim if an evidence card is ready. "
+            "If the user requested only an evidence card, show it with its source links. "
+            "If the user asked for a digest and the items are ready, call the formatting tool. "
+            "Otherwise answer directly with cited sources when available."
         ),
     }
 

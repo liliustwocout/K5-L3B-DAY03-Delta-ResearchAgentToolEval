@@ -1,4 +1,4 @@
-# Tool declarations (v3): each description says WHAT / WHEN to use / WHEN NOT to use.
+# Tool declarations: each description says WHAT / WHEN to use / WHEN NOT to use.
 # Keep in sync with tools/__init__.py (TOOL_FUNCTIONS) and data/eval_*.json.
 tools:
   # ---------------- Core tools ----------------
@@ -43,7 +43,7 @@ tools:
       required: [query]
 
   - name: fetch
-    description: "Read the content of ONE concrete URL (Firecrawl). Use when the user gives a link to read or summarize. Do NOT use to search, and never invent a URL (use clarify to ask)."
+    description: "Read the content of ONE concrete URL (Firecrawl). Use when the user asks to read or summarize the link, or when a needed source has no excerpt. For a claim comparison with excerpts already provided, use build_evidence_card directly. Never invent a URL (use clarify to ask)."
     parameters:
       type: object
       properties:
@@ -70,6 +70,24 @@ tools:
         template: {type: string, enum: [brief, sections, bullets, thread, daily_ai_vn], default: "sections", description: "brief = top 5; sections = grouped; bullets = flat list; thread = numbered 1/ 2/; daily_ai_vn = Vietnamese daily AI news."}
         headline: {type: string, default: "", description: "Digest title."}
       required: [items, template]
+
+  - name: build_evidence_card
+    description: "Compare one claim against source excerpts already supplied or collected. Use for requests to check a claim or explain why sources disagree. Group each excerpt as supports, contradicts, or unclear. Never invent URLs or excerpts. A URL with no excerpt must be read first. Returns a Telegram-ready Markdown preview. For a general digest use format."
+    parameters:
+      type: object
+      properties:
+        claim: {type: string, description: "The single factual claim being evaluated."}
+        evidence:
+          type: array
+          description: "Relevant excerpts from sources already read. Use an empty list if no usable source is available."
+          items:
+            type: object
+            properties:
+              url: {type: string, description: "The HTTP(S) URL actually supplied or returned for this source."}
+              summary: {type: string, description: "A short paraphrase of what this source says about the claim."}
+              stance: {type: string, enum: [supports, contradicts, unclear], description: "How the excerpt relates to the claim. Use unclear when the excerpt does not establish either side."}
+            required: [url, summary, stance]
+      required: [claim, evidence]
 
   # ---------------- Bonus tools ----------------
   - name: send
