@@ -110,13 +110,57 @@ def test_policy_instruction_like_lines_go_to_untrusted_text() -> None:
 #   2. bad / missing input from the model (empty string, wrong type, out-of-enum value)
 #   3. failure path (missing key, HTTP error, timeout) -> returns error dict, does not raise
 
-def test_my_new_tool_happy_path() -> None:
-    pytest.skip(TODO)
+def test_evidence_card_shows_conflicting_sources_with_links() -> None:
+    card = TOOL_FUNCTIONS["build_evidence_card"](
+        claim="Startup A gọi vốn 50 triệu USD",
+        evidence=[
+            {"url": "https://example.com/a", "summary": "Công bố 50 triệu USD.", "stance": "supports"},
+            {"url": "https://example.org/b", "summary": "Đưa tin 40 triệu USD.", "stance": "contradicts"},
+        ],
+    )
+
+    assert card["status"] == "mixed"
+    markdown = card["markdown"]
+    assert "*✅ Nguồn ủng hộ*\n• [Nguồn 1](https://example.com/a) — Công bố 50 triệu USD." in markdown
+    assert "*⚠️ Nguồn đưa thông tin khác*\n• [Nguồn 2](https://example.org/b) — Đưa tin 40 triệu USD." in markdown
+    assert "Chưa đủ căn cứ để chốt." in markdown
 
 
-def test_my_new_tool_bad_input_from_model() -> None:
-    pytest.skip(TODO)
+def test_evidence_card_reports_insufficient_evidence_when_no_source_is_clear() -> None:
+    card = TOOL_FUNCTIONS["build_evidence_card"](
+        claim="Dự án [A] đạt *mục tiêu*",
+        evidence=[{
+            "url": "https://example.com/report_(2026)",
+            "summary": "Báo cáo chỉ ghi trạng thái đang_triển_khai.",
+            "stance": "unclear",
+        }],
+    )
+
+    assert card["status"] == "insufficient"
+    markdown = card["markdown"]
+    assert r"Dự án \[A] đạt \*mục tiêu\*" in markdown
+    assert "[Nguồn 1](https://example.com/report_%282026%29)" in markdown
+    assert r"đang\_triển\_khai" in markdown
+    assert "Chưa đủ bằng chứng" in markdown
 
 
-def test_my_new_tool_failure_returns_error_dict() -> None:
-    pytest.skip(TODO)
+def test_evidence_card_rejects_unknown_stance_from_model() -> None:
+    card = TOOL_FUNCTIONS["build_evidence_card"](
+        claim="Một nhận định",
+        evidence=[{"url": "https://example.com/a", "summary": "Trích đoạn.", "stance": "verified"}],
+    )
+
+    assert card["error"] == "ValueError"
+    assert "evidence[0].stance" in card["message"]
+    assert "markdown" not in card
+
+
+def test_evidence_card_returns_error_for_malformed_source_url() -> None:
+    card = TOOL_FUNCTIONS["build_evidence_card"](
+        claim="Một nhận định",
+        evidence=[{"url": "https:///missing-host", "summary": "Trích đoạn.", "stance": "supports"}],
+    )
+
+    assert card["error"] == "ValueError"
+    assert "evidence[0].url" in card["message"]
+    assert "markdown" not in card
