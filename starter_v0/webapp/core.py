@@ -24,7 +24,6 @@ MAX_MESSAGES = 10      # chỉ giữ 10 tin nhắn gần nhất
 MAX_CHARS = 2000       # cắt mỗi tin nhắn
 MAX_TOOL_ROUNDS = 4
 
-_system_prompt = (ARTIFACTS / "system_prompt.md").read_text(encoding="utf-8")
 def _strip_unsupported(node: Any) -> Any:
     """Bỏ `additionalProperties`: bản google-genai cũ (ghim trên Vercel) báo lỗi khi gặp trường này."""
     if isinstance(node, dict):
@@ -34,8 +33,37 @@ def _strip_unsupported(node: Any) -> Any:
     return node
 
 
-_tools = _strip_unsupported(to_openai_tools(load_tool_declarations(ARTIFACTS / "tools.yaml")))
+# Các phiên bản agent có thể chọn trên web. "current" là bản đang nộp (artifacts/system_prompt.md và tools.yaml);
+# v0 đến v3 là các bản đã thử, nằm trong artifacts/versions/.
+VERSION_FILES = {
+    "v0": ("system_prompt_v0.md", "tools_v0.yaml"),
+    "v1": ("system_prompt_v1.md", "tools_v1.yaml"),
+    "v2": ("system_prompt_v2.md", "tools_v2.yaml"),
+    "v3": ("system_prompt_v3.md", "tools_v3.yaml"),
+}
+DEFAULT_VERSION = "current"
+_loaded: dict[str, tuple[str, list[dict[str, Any]]]] = {}
+_version: ContextVar[str] = ContextVar("version", default=DEFAULT_VERSION)
 _provider: Any = None
+
+
+def valid_version(version: Any) -> bool:
+    return version == DEFAULT_VERSION or (isinstance(version, str) and version in VERSION_FILES)
+
+
+def load_version(version: str) -> tuple[str, list[dict[str, Any]]]:
+    """Trả về (system prompt, danh sách tool) của một phiên bản; đọc một lần rồi giữ lại."""
+    if version not in _loaded:
+        if version == DEFAULT_VERSION:
+            prompt_path, tools_path = ARTIFACTS / "system_prompt.md", ARTIFACTS / "tools.yaml"
+        else:
+            prompt_name, tools_name = VERSION_FILES[version]
+            prompt_path, tools_path = ARTIFACTS / "versions" / prompt_name, ARTIFACTS / "versions" / tools_name
+        _loaded[version] = (
+            prompt_path.read_text(encoding="utf-8"),
+            _strip_unsupported(to_openai_tools(load_tool_declarations(tools_path))),
+        )
+    return _loaded[version]
 
 
 # ---- Gửi Telegram trên web: mỗi người nhận tin ở chat ID của chính họ ----
@@ -71,6 +99,9 @@ def _web_send(text: str = "", confirmed: bool = False) -> dict[str, Any]:
     if os.getenv("DISABLE_SEND") == "1":  # công tắc khẩn cấp của chủ dự án, mặc định không đặt
         return {"tool": "send_telegram", "status": "disabled_on_web",
                 "message": "Gửi Telegram đã bị tắt trên bản web này."}
+    if _version.get() != DEFAULT_VERSION:  # các phiên bản cũ chỉ để so sánh, không gửi tin thật
+        return {"tool": "send_telegram", "status": "disabled_on_web",
+                "message": "Chỉ phiên bản hiện tại gửi được Telegram. Các phiên bản cũ chỉ để so sánh hành vi."}
     chat = _chat_id.get()
     if not chat:
         return {"tool": "send_telegram", "status": "needs_chat_id",
@@ -141,20 +172,26 @@ def handle_chat(payload: Any) -> tuple[int, dict[str, Any]]:
     elif not valid_chat_id(chat):
         return 400, {"error": "Chat ID Telegram không hợp lệ: chỉ gồm chữ số (5 đến 15 chữ số)."}
 
-    messages = [{"role": "system", "content": _system_prompt}, *history]
-    token = _chat_id.set(chat)
+    version = payload.get("version", DEFAULT_VERSION)
+    if not valid_version(version):
+        return 400, {"error": "Phiên bản không hợp lệ."}
+    system_prompt, tools = load_version(version)
+
+    messages = [{"role": "system", "content": system_prompt}, *history]
+    chat_token, version_token = _chat_id.set(chat), _version.set(version)
     try:
         result = run_model_tool_loop(
             provider=get_provider(),
             messages=messages,
-            tools=_tools,
+            tools=tools,
             model=None,
             max_tool_rounds=MAX_TOOL_ROUNDS,
         )
     except Exception as exc:  # lỗi provider/mạng: không lộ chi tiết dài
         return 502, {"error": f"{type(exc).__name__}: {str(exc)[:200]}"}
     finally:
-        _chat_id.reset(token)
+        _chat_id.reset(chat_token)
+        _version.reset(version_token)
 
     events = [
         {
@@ -164,4 +201,4 @@ def handle_chat(payload: Any) -> tuple[int, dict[str, Any]]:
         }
         for e in result.get("tool_events", [])
     ]
-    return 200, {"reply": result.get("assistant_text", ""), "status": result.get("status"), "tool_events": events}
+    return 200, {"reply": result.get("assistant_text", ""), "status": result.get("status"), "tool_events": events, "version": version}

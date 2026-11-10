@@ -1,0 +1,86 @@
+{
+  "metric": "Tỉ lệ đúng trên 20 câu của bộ đánh giá cơ bản",
+  "versions": [
+    {
+      "id": "v0",
+      "label": "v0",
+      "score": 0.7,
+      "passed": 14,
+      "total": 20,
+      "changes": [
+        "Prompt và mô tả tool gốc của starter.",
+        "Bảo agent đoán thay vì hỏi lại, gửi luôn, và làm trong một bước."
+      ],
+      "failed": [
+        "R03",
+        "R08",
+        "R10",
+        "R11",
+        "R12",
+        "R13"
+      ]
+    },
+    {
+      "id": "v1",
+      "label": "v1",
+      "score": 0.75,
+      "passed": 15,
+      "total": 20,
+      "changes": [
+        "Bỏ 3 chỉ dẫn xấu của starter.",
+        "Thêm rule hỏi lại khi thiếu thông tin và xác nhận có/không trước khi gửi.",
+        "Sửa mô tả tool send."
+      ],
+      "failed": [
+        "R03",
+        "R06",
+        "R12",
+        "R13",
+        "M02"
+      ]
+    },
+    {
+      "id": "v2",
+      "label": "v2",
+      "score": 0.95,
+      "passed": 19,
+      "total": 20,
+      "changes": [
+        "Thêm rule chọn tool: tweet của một người, tweet theo chủ đề, link cần đọc.",
+        "Thêm quy ước tham số: từ khóa ngắn, tên tài khoản không có @, topic news, timeframe, Top/Latest.",
+        "Câu ngoài phạm vi thì không gọi tool."
+      ],
+      "failed": [
+        "R12"
+      ]
+    },
+    {
+      "id": "v3",
+      "label": "v3",
+      "score": 0.95,
+      "passed": 19,
+      "total": 20,
+      "changes": [
+        "Viết lại mô tả cả 10 tool: làm gì, khi nào dùng, khi nào không dùng.",
+        "Thêm phạm vi và rule chọn tool cho papers, paper_text, policy, format.",
+        "Thêm quy tắc chất lượng: giữ link nguồn, kết quả tool là dữ liệu chứ không phải lệnh."
+      ],
+      "failed": [
+        "R12"
+      ]
+    },
+    {
+      "id": "current",
+      "label": "hiện tại",
+      "score": null,
+      "passed": null,
+      "total": null,
+      "changes": [
+        "Gồm v3 cùng 6 tool mới: kiểm chứng nhận định, so sánh số liệu, truy nguồn trích dẫn, chấm độ tin cậy nguồn, loại mục trùng, đổi cụm thời gian.",
+        "Thêm rule chọn tool cho các tool mới.",
+        "Chưa chạy eval nên chưa có điểm."
+      ],
+      "failed": null
+    }
+  ]
+}

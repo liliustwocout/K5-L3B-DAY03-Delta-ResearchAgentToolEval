@@ -24,6 +24,8 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:  # noqa: N802
         if self.path in ("/", "/index.html"):
             self._send(200, "text/html; charset=utf-8", INDEX.read_bytes())
+        elif self.path == "/versions.json":
+            self._send(200, "application/json; charset=utf-8", (INDEX.parent / "versions.json").read_bytes())
         else:
             self._send(404, "text/plain; charset=utf-8", b"Not found")
 
