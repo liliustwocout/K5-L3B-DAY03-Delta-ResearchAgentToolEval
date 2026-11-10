@@ -1,0 +1,13 @@
+.env
+.env.*
+runs/
+analysis/
+tests/
+samples/
+transcripts/
+data/
+scripts/
+arxiv_papers/
+artifacts/versions/
+__pycache__/
+*.pyc

@@ -8,7 +8,9 @@ import requests
 from tools._shared import TIMEOUT, err
 
 
-def send_telegram(text: str = "", confirmed: bool = False) -> dict[str, Any]:
+def send_telegram(text: str = "", confirmed: bool = False, chat_id: str | None = None) -> dict[str, Any]:
+    """Gửi tin Telegram. `chat_id` là tùy chọn, không khai báo trong tools.yaml (model không thấy);
+    chỉ code gọi tool (ví dụ UI web) truyền vào. Không có thì dùng TELEGRAM_CHAT_ID trong .env."""
     if not confirmed:
         return {
             "tool": "send_telegram",
@@ -17,7 +19,7 @@ def send_telegram(text: str = "", confirmed: bool = False) -> dict[str, Any]:
         }
     try:
         token = os.getenv("TELEGRAM_BOT_TOKEN")
-        chat_id = os.getenv("TELEGRAM_CHAT_ID")
+        chat_id = str(chat_id).strip() if chat_id else os.getenv("TELEGRAM_CHAT_ID")
         if not token or not chat_id:
             raise RuntimeError("Missing TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID env var")
         response = requests.post(
