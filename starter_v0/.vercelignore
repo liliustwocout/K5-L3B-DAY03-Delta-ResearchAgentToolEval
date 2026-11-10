@@ -8,7 +8,6 @@ transcripts/
 data/
 scripts/
 arxiv_papers/
-artifacts/versions/
 __pycache__/
 *.pyc
 # Giao diện Streamlit và server local không dùng trên Vercel

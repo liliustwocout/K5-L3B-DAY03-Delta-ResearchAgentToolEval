@@ -119,6 +119,33 @@
   .chat-id:focus-visible { outline: none; border-color: var(--blue); }
   .chat-id.bad { border-color: var(--ink); }
   .confirm .need { flex-basis: 100%; margin: 0; font-size: .86rem; color: var(--muted); }
+
+  /* Chọn phiên bản agent */
+  .picker { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 22px; }
+  .picker-label { font-weight: 600; font-size: .9rem; }
+  .picker-buttons { display: flex; flex-wrap: wrap; gap: 6px; }
+  .pick { border: 2px solid var(--line); background: transparent; padding: 4px 14px; cursor: pointer; }
+  .pick:hover { border-color: var(--blue); }
+  .pick[aria-pressed="true"] { background: var(--blue); border-color: var(--blue); color: var(--blue-ink); font-weight: 600; }
+  #pickerNote { margin: 8px 0 0; }
+
+  /* Bảng so sánh các phiên bản */
+  .compare { margin-top: 56px; }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; min-width: 680px; }
+  th, td { text-align: left; vertical-align: top; padding: 14px 12px; border-top: 1px solid var(--line); }
+  thead th { font-weight: 600; font-size: .82rem; color: var(--muted); border-top: 0; padding-bottom: 8px; }
+  tbody th { font-weight: 300; font-size: 1.5rem; white-space: nowrap; }
+  tbody tr.on { background: var(--blue-soft); }
+  .score { min-width: 130px; }
+  .score b { display: block; font-weight: 300; font-size: 1.5rem; line-height: 1.1; }
+  .score small, .na, .fails { color: var(--muted); font-size: .86rem; }
+  .bar { display: block; height: 6px; background: var(--tile); margin: 6px 0 4px; }
+  .bar i { display: block; height: 100%; background: var(--blue); }
+  td ul { margin: 0; padding-left: 18px; }
+  td li { margin-bottom: 4px; font-size: .92rem; }
+  .use { border: 2px solid var(--line); background: transparent; padding: 4px 12px; cursor: pointer; white-space: nowrap; }
+  .use:hover { border-color: var(--blue); }
 </style>
 </head>
 <body>
@@ -140,6 +167,11 @@
           <div class="samples" id="samples"></div>
         </div>
       </div>
+      <div class="picker" id="pickerWrap">
+        <span class="picker-label">phiên bản agent</span>
+        <div class="picker-buttons" id="picker" role="group" aria-label="Phiên bản agent"></div>
+      </div>
+      <p class="note" id="pickerNote"></p>
       <form class="composer" id="form">
         <input id="text" autocomplete="off" placeholder="nhập câu hỏi" maxlength="2000" aria-label="Câu hỏi" required>
         <button class="go" id="btn" type="submit" aria-label="Gửi">&rarr;</button>
@@ -161,6 +193,17 @@
       <input class="chat-id" id="chatId" inputmode="numeric" autocomplete="off" placeholder="ví dụ 123456789" aria-describedby="chatIdState">
       <p class="note" id="chatIdState">Chưa nhập chat ID.</p>    </aside>
   </div>
+
+  <section class="compare" id="compare">
+    <h2>so sánh các phiên bản</h2>
+    <p class="note" id="compareMetric"></p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>phiên bản</th><th>điểm</th><th>thay đổi chính</th><th>câu còn sai</th><th></th></tr></thead>
+        <tbody id="compareBody"></tbody>
+      </table>
+    </div>
+  </section>
 </div>
 
 <script>
@@ -190,6 +233,46 @@ function showChatState() {
 }
 chatBox.addEventListener("input", showChatState);
 showChatState();
+
+/* ---------- chọn phiên bản agent ---------- */
+let VERSIONS = [], version = "current";
+try { version = localStorage.getItem("version") || "current"; } catch (e) {}
+const pickerBox = $("picker"), pickerNote = $("pickerNote");
+function scoreText(v) { return v.score == null ? "chưa đo điểm" : v.score.toFixed(2) + " (" + v.passed + "/" + v.total + " câu đúng)"; }
+function showVersion() {
+  pickerBox.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.id === version ? "true" : "false"));
+  document.querySelectorAll("#compareBody tr").forEach(r => r.classList.toggle("on", r.dataset.id === version));
+  const v = VERSIONS.find(x => x.id === version);
+  pickerNote.textContent = v ? "Đang dùng: " + v.label + " · " + scoreText(v) + (version === "current" ? "" : ". Phiên bản cũ chỉ để so sánh, không gửi được Telegram.") : "";
+}
+function setVersion(id) {
+  if (id === version) return;
+  version = id;
+  try { localStorage.setItem("version", id); } catch (e) {}
+  if (history.length) { location.reload(); return; }  // đổi phiên bản thì bắt đầu cuộc trò chuyện mới
+  showVersion();
+}
+function renderVersions(data) {
+  VERSIONS = data.versions;
+  if (!VERSIONS.some(v => v.id === version)) version = "current";
+  $("compareMetric").textContent = data.metric + ".";
+  VERSIONS.forEach(v => {
+    const b = el("button", "pick", esc(v.label)); b.type = "button"; b.dataset.id = v.id; b.onclick = () => setVersion(v.id); pickerBox.append(b);
+    const pct = v.score == null ? 0 : Math.round(v.score * 100);
+    const tr = el("tr"); tr.dataset.id = v.id;
+    tr.innerHTML = "<th scope='row'>" + esc(v.label) + "</th>" +
+      "<td class='score'>" + (v.score == null ? "<span class='na'>chưa đo</span>"
+        : "<b>" + v.score.toFixed(2) + "</b><span class='bar'><i style='width:" + pct + "%'></i></span><small>" + v.passed + "/" + v.total + " câu đúng</small>") + "</td>" +
+      "<td><ul>" + v.changes.map(c => "<li>" + esc(c) + "</li>").join("") + "</ul></td>" +
+      "<td class='fails'>" + (v.failed == null ? "<span class='na'>chưa đo</span>" : v.failed.length ? esc(v.failed.join(", ")) : "không có") + "</td><td></td>";
+    const use = el("button", "use", "dùng bản này"); use.type = "button";
+    use.onclick = () => { setVersion(v.id); window.scrollTo({top: 0, behavior: "smooth"}); };
+    tr.lastChild.append(use);
+    $("compareBody").append(tr);
+  });
+  showVersion();
+}
+fetch("/versions.json").then(r => r.json()).then(renderVersions).catch(() => { $("compare").hidden = true; $("pickerWrap").hidden = true; });
 
 /* ---------- giao diện sáng/tối ---------- */
 const THEMES = ["system", "light", "dark"], LABEL = {system: "tự động", light: "sáng", dark: "tối"};
@@ -261,7 +344,7 @@ async function ask(q) {
   const wait = el("div", "wait", '<span class="dots"><i></i><i></i><i></i><i></i></span><span>agent đang tra cứu</span>');
   thread.append(wait); wait.scrollIntoView({block: "end"});
   try {
-    const r = await fetch("/api/chat", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({messages: history, telegram_chat_id: chatIdValue() || undefined})});
+    const r = await fetch("/api/chat", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({messages: history, telegram_chat_id: chatIdValue() || undefined, version})});
     const data = await r.json(); wait.remove();
     if (!r.ok) { addAgent({reply: "Có lỗi: " + (data.error || r.status) + ". Thử gửi lại sau ít giây."}); history.pop(); }
     else { addAgent(data); history.push({role: "assistant", content: data.reply || ""}); }
