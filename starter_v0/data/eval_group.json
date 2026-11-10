@@ -3,5 +3,42 @@
   "dataset_role": "group",
   "description": "Case do NHÓM tự viết thêm để cover thêm trường hợp. Mỗi case cần: id, phase='B', query HOẶC turns, failure_type (thuộc allowed_failure_types), và expect (tool_calls[...] hoặc no_tool=true). Nên kèm metadata.what_it_tests.",
   "allowed_failure_types": ["wrong_tool", "wrong_arg_value", "wrong_boundary", "unnecessary_tool", "out_of_scope", "missing_info"],
-  "cases": []
+  "cases": [
+    {
+      "id": "G01_evidence_card_conflicting_reports",
+      "phase": "B",
+      "query": "Tạo một thẻ đối chiếu bằng chứng cho nhận định Startup A gọi vốn 50 triệu USD. Chỉ dùng hai trích đoạn minh họa bên dưới. Các URL là link trích dẫn đi kèm.\n- Trích đoạn 1: «Startup A công bố vòng vốn 50 triệu USD.» Nguồn: https://example.com/press\n- Trích đoạn 2: «Startup A huy động 40 triệu USD trong vòng vốn vừa công bố.» Nguồn: https://example.org/report",
+      "failure_type": "wrong_tool",
+      "expect": {
+        "tool_calls": [{"name": "build_evidence_card", "args": {}}]
+      },
+      "metadata": {
+        "what_it_tests": "Chọn công cụ tạo thẻ bằng chứng khi đã có trích đoạn và URL của hai nguồn đưa số liệu mâu thuẫn."
+      }
+    },
+    {
+      "id": "G02_metric_delta_percentage_points",
+      "phase": "B",
+      "query": "Tạo thẻ so sánh tỷ lệ chuyển đổi từ tháng 9 (20%) sang tháng 10 (26%). Dùng hai số liệu minh họa đã cho và phân biệt điểm phần trăm với phần trăm thay đổi tương đối.",
+      "failure_type": "wrong_tool",
+      "expect": {
+        "tool_calls": [{"name": "build_metric_delta_card", "args": {}}]
+      },
+      "metadata": {
+        "what_it_tests": "Chọn công cụ tính mức thay đổi khi người dùng cung cấp hai kỳ cùng đơn vị phần trăm."
+      }
+    },
+    {
+      "id": "G03_trace_source_chain_shared_origin",
+      "phase": "B",
+      "query": "Vẽ sơ đồ trích dẫn để kiểm tra ba bài báo có dùng chung nguồn không. Đây là bốn tài liệu minh họa có trong dữ liệu:\n- Báo A (https://example.com/a) dẫn Thông cáo Startup A.\n- Báo B (https://example.com/b) dẫn Thông cáo Startup A.\n- Báo C (https://example.net/c) dẫn Thông cáo Startup A.\n- Thông cáo Startup A (https://example.org/press) là tài liệu cuối, có danh sách trích dẫn rỗng.",
+      "failure_type": "wrong_tool",
+      "expect": {
+        "tool_calls": [{"name": "trace_source_chain", "args": {}}]
+      },
+      "metadata": {
+        "what_it_tests": "Chọn công cụ truy dấu khi đã có đầy đủ các URL và quan hệ trích dẫn."
+      }
+    }
+  ]
 }

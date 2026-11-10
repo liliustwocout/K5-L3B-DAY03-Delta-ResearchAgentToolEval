@@ -149,11 +149,15 @@ Transcript 1 đủ 3 kịch bản bắt buộc: yêu cầu thường, thiếu th
 
 | Item | Evidence File | What Worked | Risk / Guardrail |
 |---|---|---|---|
-| Tool mới (`tools/<tên>/`) |  |  |  |
-| Unit test tool mới (≥ 3 test/tool) | `pytest` output (0 failed) |  |  |
-| UI (lệnh chạy + link dùng thử) | `starter_v0/app.py`, `starter_v0/public/index.html`, `starter_v0/api/chat.py`, `starter_v0/dev_server.py`, `starter_v0/webapp/core.py` | Bấm câu mẫu, chat, hiển thị từng lần gọi tool. Đã thử: câu thường gọi `timeline`, thiếu thông tin thì `clarify`, và `send` trên web gửi tới chat ID mỗi người nhập, không dùng chat của chủ dự án (kiểm tra bằng script tạm ngoài repo) | Chưa deploy nên chưa có link dùng thử. Streamlit mới được test bằng bộ test của Streamlit, không phải trình duyệt thật. Giới hạn 5 tin mỗi chat ID mỗi giờ (bộ đếm trong bộ nhớ, yếu trên serverless); bot có thể nhắn cho bất kỳ ai đã bấm Start nếu biết chat ID của họ. Chủ dự án có thể tắt hẳn bằng biến `DISABLE_SEND=1` |
+| `build_evidence_card` | [Tool và contract](../../starter_v0/tools/build_evidence_card/TOOL.md) | Nhóm nguồn ủng hộ, mâu thuẫn và chưa đủ rõ thành thẻ Markdown có link. | Kết luận dựa trên nhãn bằng chứng đầu vào. Agent dùng luồng xác nhận trước khi gửi Telegram. |
+| Unit test `build_evidence_card` | [test_tools_todo.py](../../starter_v0/tests/test_tools_todo.py) | 4 test mới đạt. Toàn suite 71 đạt, 0 lỗi, 14 TODO cũ được bỏ qua. | Test offline, gồm nhãn không hợp lệ và URL thiếu hostname. |
+| `build_metric_delta_card` | [Tool và contract](../../starter_v0/tools/build_metric_delta_card/TOOL.md) | Từ 20% lên 26% cho ra +6 điểm phần trăm và +30% so với kỳ gốc. | Cần cùng đơn vị. Mốc gốc không dương chỉ có chênh lệch tuyệt đối. |
+| Unit test `build_metric_delta_card` | [test_tools_todo.py](../../starter_v0/tests/test_tools_todo.py) | 5 trường hợp mới đạt. Toàn suite 81 đạt, 0 lỗi, 14 TODO cũ được bỏ qua. | Kiểm tra đơn vị khác nhau, đầu vào sai kiểu và mốc gốc bằng 0 hoặc âm. |
+| `trace_source_chain` | [Tool và contract](../../starter_v0/tools/trace_source_chain/TOOL.md) | G03 chọn đúng tool. Ba bài dẫn về một thông cáo trong dữ liệu minh họa. | Đánh dấu đích trích dẫn chưa có dữ liệu và trả lỗi khi có vòng lặp. |
+| Unit test `trace_source_chain` | [test_tools_todo.py](../../starter_v0/tests/test_tools_todo.py) | 5 trường hợp mới đạt. Toàn suite 91 đạt, 0 lỗi, 14 TODO cũ được bỏ qua. | Kiểm tra URL lặp, nhánh gián tiếp, nguồn chưa rõ, vòng lặp và đầu vào sai kiểu. |
+| UI Streamlit | [app.py](../../starter_v0/app.py) | Thẻ KPI và sơ đồ trích dẫn có link nguồn. Đã thử cả hai câu hỏi mẫu qua OpenRouter. | Web chat xem trước nội dung. Luồng đăng Telegram dùng CLI với bước xác nhận. |
 
-Tool unit tests: số test đã viết, và một ví dụ lỗi mà unit test bắt được nhưng eval không bắt được.
+Unit test phát hiện URL thiếu hostname và kiểm tra tool trả error dict. Case eval `G01_evidence_card_conflicting_reports` chỉ chấm model có chọn đúng tool.
 
 ### B5. Bonus Evidence
 

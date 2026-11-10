@@ -1,4 +1,4 @@
-# Tool declarations (v3): each description says WHAT / WHEN to use / WHEN NOT to use.
+# Tool declarations: each description says WHAT / WHEN to use / WHEN NOT to use.
 # Keep in sync with tools/__init__.py (TOOL_FUNCTIONS) and data/eval_*.json.
 tools:
   # ---------------- Core tools ----------------
@@ -43,7 +43,7 @@ tools:
       required: [query]
 
   - name: fetch
-    description: "Read the content of ONE concrete URL (Firecrawl). Use when the user gives a link to read or summarize. Do NOT use to search, and never invent a URL (use clarify to ask)."
+    description: "Read the content of ONE concrete URL (Firecrawl). Use when the user asks to read or summarize the link, or when a needed source has no excerpt. For a claim comparison or source trace with the evidence or citation relationships already provided, use the corresponding analysis tool directly. Never invent a URL (use clarify to ask)."
     parameters:
       type: object
       properties:
@@ -70,6 +70,78 @@ tools:
         template: {type: string, enum: [brief, sections, bullets, thread, daily_ai_vn], default: "sections", description: "brief = top 5; sections = grouped; bullets = flat list; thread = numbered 1/ 2/; daily_ai_vn = Vietnamese daily AI news."}
         headline: {type: string, default: "", description: "Digest title."}
       required: [items, template]
+
+  - name: build_evidence_card
+    description: "Compare one claim against source excerpts already supplied or collected. Use for requests to check a claim or explain why sources disagree. Group each excerpt as supports, contradicts, or unclear. Never invent URLs or excerpts. A URL with no excerpt must be read first. Returns a Telegram-ready Markdown preview. For a general digest use format."
+    parameters:
+      type: object
+      properties:
+        claim: {type: string, description: "The single factual claim being evaluated."}
+        evidence:
+          type: array
+          description: "Relevant excerpts from sources already read. Use an empty list if no usable source is available."
+          items:
+            type: object
+            properties:
+              url: {type: string, description: "The HTTP(S) URL actually supplied or returned for this source."}
+              summary: {type: string, description: "A short paraphrase of what this source says about the claim."}
+              stance: {type: string, enum: [supports, contradicts, unclear], description: "How the excerpt relates to the claim. Use unclear when the excerpt does not establish either side."}
+            required: [url, summary, stance]
+      required: [claim, evidence]
+
+  - name: build_metric_delta_card
+    description: "Calculate the absolute and relative change between two observations of the same metric. Use when the user asks how much a metric rose or fell, or requests a before/after KPI card. Use supplied or collected observations. Preserve both periods and units. A source URL belongs inside its observation. Omit url when no source URL is available. Ask for missing values or units and never invent data."
+    parameters:
+      type: object
+      additionalProperties: false
+      properties:
+        metric: {type: string, description: "Short name of the metric being compared."}
+        baseline:
+          type: object
+          additionalProperties: false
+          description: "The earlier observation."
+          properties:
+            value: {type: number, description: "Numeric value, e.g. 20 for 20%."}
+            period: {type: string, description: "Label for this period as given by the user or source."}
+            unit: {type: string, description: "Unit, e.g. %, USD, users. Match the current observation."}
+            url: {type: string, description: "HTTP(S) source URL when supplied or retrieved."}
+          required: [value, period, unit]
+        current:
+          type: object
+          additionalProperties: false
+          description: "The later observation."
+          properties:
+            value: {type: number, description: "Numeric value, e.g. 26 for 26%."}
+            period: {type: string, description: "Label for this period as given by the user or source."}
+            unit: {type: string, description: "Unit, e.g. %, USD, users. Match the baseline observation."}
+            url: {type: string, description: "HTTP(S) source URL when supplied or retrieved."}
+          required: [value, period, unit]
+      required: [metric, baseline, current]
+
+  - name: trace_source_chain
+    description: "Trace where a story comes from, or check whether multiple reports rely on a shared source. Use when the user asks about source independence, a citation chain, or a source map. Call directly when document URLs and direct citation relationships are already provided. Include every supplied document as its own article, including a known endpoint with an empty cites array. Include only confirmed citation links relevant to the story."
+    parameters:
+      type: object
+      additionalProperties: false
+      properties:
+        articles:
+          type: array
+          description: "All supplied documents, including each supplied terminal source with cites: []. Omit only destinations whose details were not supplied or verified."
+          minItems: 1
+          maxItems: 12
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              url: {type: string, description: "Actual HTTP(S) URL of this document."}
+              title: {type: string, description: "Short title if known."}
+              cites:
+                type: array
+                maxItems: 12
+                items: {type: string}
+                description: "Direct citation URLs for this story. Use [] if this supplied document ends the chain. If a cited document was not supplied or examined, keep its URL here and omit its document entry."
+            required: [url, cites]
+      required: [articles]
 
   # ---------------- Bonus tools ----------------
   - name: send

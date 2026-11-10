@@ -7,6 +7,8 @@ import yaml
 
 # Folder names are intentionally vague to match the tool names students see.
 # The imported function names are the underlying implementations (unchanged).
+from .build_evidence_card.tool import build_evidence_card
+from .build_metric_delta_card.tool import build_metric_delta_card
 from .clarify.tool import ask_user
 from .papers.tool import arxiv_search
 from .paper_text.tool import get_arxiv_paper_text
@@ -17,6 +19,7 @@ from .policy.tool import search_company_policy
 from .social_search.tool import search_tweets
 from .send.tool import send_telegram
 from .lookup.tool import web_search
+from .trace_source_chain.tool import trace_source_chain
 
 
 # NOTE (starter_v0): tool names here are intentionally vague. These keys are the
@@ -35,8 +38,9 @@ TOOL_FUNCTIONS = {
     "policy": search_company_policy,
     "papers": arxiv_search,
     "paper_text": get_arxiv_paper_text,
-    # TODO CP3 (student): register your new tool here, e.g. "my_tool": my_tool_function,
-    # then declare it in artifacts/tools.yaml and run `pytest tests/test_tool_contract.py`.
+    "build_evidence_card": build_evidence_card,
+    "build_metric_delta_card": build_metric_delta_card,
+    "trace_source_chain": trace_source_chain,
 }
 
 
