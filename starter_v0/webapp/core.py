@@ -25,7 +25,16 @@ MAX_CHARS = 2000       # cắt mỗi tin nhắn
 MAX_TOOL_ROUNDS = 4
 
 _system_prompt = (ARTIFACTS / "system_prompt.md").read_text(encoding="utf-8")
-_tools = to_openai_tools(load_tool_declarations(ARTIFACTS / "tools.yaml"))
+def _strip_unsupported(node: Any) -> Any:
+    """Bỏ `additionalProperties`: bản google-genai cũ (ghim trên Vercel) báo lỗi khi gặp trường này."""
+    if isinstance(node, dict):
+        return {key: _strip_unsupported(value) for key, value in node.items() if key != "additionalProperties"}
+    if isinstance(node, list):
+        return [_strip_unsupported(value) for value in node]
+    return node
+
+
+_tools = _strip_unsupported(to_openai_tools(load_tool_declarations(ARTIFACTS / "tools.yaml")))
 _provider: Any = None
 
 
