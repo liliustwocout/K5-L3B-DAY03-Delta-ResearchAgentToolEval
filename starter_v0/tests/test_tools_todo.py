@@ -281,3 +281,105 @@ def test_source_chain_returns_error_for_malformed_citation_input() -> None:
 
     assert result["error"] == "ValueError"
     assert "articles[0].cites" in result["message"]
+
+
+# ---------------- rate_sources ----------------
+
+def test_rate_sources_groups_urls_by_domain_tier() -> None:
+    result = TOOL_FUNCTIONS["rate_sources"](urls=[
+        "https://arxiv.org/abs/1706.03762",
+        "https://www.reuters.com/world/x",
+        "https://x.com/sama/status/1",
+        "https://random-blog.io/post",
+    ])
+
+    assert [item["tier"] for item in result["items"]] == ["tier1", "tier2", "tier3", "unknown"]
+    assert result["summary"] == {"tier1": 1, "tier2": 1, "tier3": 1, "unknown": 1}
+
+
+def test_rate_sources_does_not_trust_lookalike_domains() -> None:
+    result = TOOL_FUNCTIONS["rate_sources"](urls=[
+        "https://arxiv.org.evil.com/abs/1",
+        "https://notarxiv.org/abs/1",
+        "https://cs.stanford.edu/paper",
+    ])
+
+    assert [item["tier"] for item in result["items"]] == ["unknown", "unknown", "tier1"]
+
+
+def test_rate_sources_marks_malformed_url_invalid_without_failing_the_call() -> None:
+    result = TOOL_FUNCTIONS["rate_sources"](urls=["không phải url", "ftp://arxiv.org/x", "https://arxiv.org/abs/1"])
+
+    assert [item["tier"] for item in result["items"]] == ["invalid", "invalid", "tier1"]
+    assert "error" not in result
+
+
+def test_rate_sources_returns_error_for_non_list_or_non_string_items() -> None:
+    assert TOOL_FUNCTIONS["rate_sources"](urls="https://arxiv.org/abs/1")["error"] == "ValueError"
+    assert TOOL_FUNCTIONS["rate_sources"](urls=["https://arxiv.org/abs/1", 123])["error"] == "ValueError"
+    assert TOOL_FUNCTIONS["rate_sources"](urls=["https://a.com"] * 51)["error"] == "ValueError"
+
+
+# ---------------- dedupe_items ----------------
+
+def test_dedupe_items_removes_same_url_ignoring_tracking_and_trailing_slash() -> None:
+    result = TOOL_FUNCTIONS["dedupe_items"](items=[
+        {"title": "A", "url": "https://www.a.com/x/?utm_source=tw&id=1"},
+        {"title": "B", "url": "https://a.com/x?id=1#top"},
+        {"title": "C", "url": "https://a.com/x?id=2"},
+    ])
+
+    assert [item["title"] for item in result["items"]] == ["A", "C"]
+    assert result["removed"] == [{"index": 1, "reason": "same_url", "duplicate_of_index": 0, "title": "B", "url": "https://a.com/x?id=1#top"}]
+
+
+def test_dedupe_items_removes_same_title_ignoring_case_accents_and_punctuation() -> None:
+    result = TOOL_FUNCTIONS["dedupe_items"](items=[
+        {"title": "Tin AI hôm nay!", "url": "https://b.com/1"},
+        {"title": "tin ai hom nay", "url": "https://c.com/2"},
+    ])
+
+    assert result["kept_count"] == 1
+    assert result["removed"][0]["reason"] == "same_title"
+
+
+def test_dedupe_items_skips_non_objects_and_keeps_items_without_url_or_title() -> None:
+    result = TOOL_FUNCTIONS["dedupe_items"](items=["chuỗi lạ", {"summary": "chỉ có tóm tắt"}, {"summary": "chỉ có tóm tắt"}])
+
+    assert result["kept_count"] == 2
+    assert result["removed"] == [{"index": 0, "reason": "not_an_object"}]
+
+
+def test_dedupe_items_returns_error_when_items_is_not_a_list() -> None:
+    assert TOOL_FUNCTIONS["dedupe_items"](items={"title": "A"})["error"] == "ValueError"
+
+
+# ---------------- parse_time_range ----------------
+
+def test_parse_time_range_today_and_yesterday_use_given_base_date() -> None:
+    today = TOOL_FUNCTIONS["parse_time_range"](text="Tin hôm nay", today="2026-11-10")
+    yesterday = TOOL_FUNCTIONS["parse_time_range"](text="hôm qua", today="2026-11-10")
+
+    assert (today["start_date"], today["end_date"], today["timeframe"]) == ("2026-11-10", "2026-11-10", "day")
+    assert (yesterday["start_date"], yesterday["end_date"], yesterday["timeframe"]) == ("2026-11-09", "2026-11-09", "week")
+
+
+def test_parse_time_range_counted_days_and_english_phrases() -> None:
+    three_days = TOOL_FUNCTIONS["parse_time_range"](text="3 ngày qua", today="2026-11-10")
+    two_weeks = TOOL_FUNCTIONS["parse_time_range"](text="last 2 weeks", today="2026-11-10")
+
+    assert (three_days["start_date"], three_days["days"], three_days["timeframe"]) == ("2026-11-08", 3, "week")
+    assert (two_weeks["start_date"], two_weeks["days"], two_weeks["timeframe"]) == ("2026-10-28", 14, "month")
+
+
+def test_parse_time_range_unknown_phrase_is_unrecognized_not_an_error() -> None:
+    result = TOOL_FUNCTIONS["parse_time_range"](text="hello", today="2026-11-10")
+
+    assert result["status"] == "unrecognized"
+    assert "error" not in result
+
+
+def test_parse_time_range_returns_error_for_bad_input_from_model() -> None:
+    assert TOOL_FUNCTIONS["parse_time_range"](text="")["error"] == "ValueError"
+    assert TOOL_FUNCTIONS["parse_time_range"](text="hôm nay", today="10/11/2026")["error"] == "ValueError"
+    assert TOOL_FUNCTIONS["parse_time_range"](text="9999 ngày qua")["error"] == "ValueError"

@@ -143,6 +143,45 @@ tools:
             required: [url, cites]
       required: [articles]
 
+  - name: rate_sources
+    description: "Rate how trustworthy URLs are by their domain: tier1 (official or primary, such as arXiv, company blogs, .gov, .edu), tier2 (reputable press), tier3 (social media or forums, only an early signal), unknown. Use when the user asks whether sources or links are reliable or credible, or before presenting claims as verified. Judges the domain only, not the article. Local, no network. Do NOT use to read a page (fetch), to compare what sources say (build_evidence_card) or to trace citations (trace_source_chain)."
+    parameters:
+      type: object
+      properties:
+        urls:
+          type: array
+          maxItems: 50
+          items: {type: string}
+          description: "The HTTP(S) URLs to rate, exactly as supplied or returned by other tools. Never invent URLs."
+      required: [urls]
+
+  - name: dedupe_items
+    description: "Remove duplicate items from results already collected, keeping the first of each: same URL (ignoring www, tracking parameters and a trailing slash) or same title. Use when results from several searches overlap, or the user asks to remove duplicates, before building a digest with format. Local only; does not fetch or search. Do NOT use to summarize."
+    parameters:
+      type: object
+      properties:
+        items:
+          type: array
+          description: "The collected items, in their original order."
+          items:
+            type: object
+            properties:
+              title: {type: string}
+              url: {type: string}
+              source: {type: string}
+              summary: {type: string}
+              section: {type: string}
+      required: [items]
+
+  - name: parse_time_range
+    description: "Convert a Vietnamese or English time phrase (hôm nay, hôm qua, tuần này, 3 ngày qua, last month) into concrete start and end dates and the matching lookup timeframe (day, week, month, year). Use ONLY when the user asks for explicit dates or a date range. For ordinary news requests do NOT use it: pass timeframe straight to lookup. Local, no network."
+    parameters:
+      type: object
+      properties:
+        text: {type: string, description: "The time phrase exactly as the user wrote it, for example 'tuần này' or '3 ngày qua'."}
+        today: {type: string, description: "Optional ISO date YYYY-MM-DD to count back from. Omit to use today's date."}
+      required: [text]
+
   # ---------------- Bonus tools ----------------
   - name: send
     description: "Post text to the Telegram channel. SIDE EFFECT. Only call with confirmed=true AFTER the user explicitly said yes to the exact text in a previous turn. If not yet confirmed, call clarify(response_type=yes_no) instead."

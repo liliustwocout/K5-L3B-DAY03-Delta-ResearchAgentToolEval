@@ -20,6 +20,9 @@ from .social_search.tool import search_tweets
 from .send.tool import send_telegram
 from .lookup.tool import web_search
 from .trace_source_chain.tool import trace_source_chain
+from .rate_sources.tool import rate_sources
+from .dedupe_items.tool import dedupe_items
+from .parse_time_range.tool import parse_time_range
 
 
 # NOTE (starter_v0): tool names here are intentionally vague. These keys are the
@@ -41,6 +44,9 @@ TOOL_FUNCTIONS = {
     "build_evidence_card": build_evidence_card,
     "build_metric_delta_card": build_metric_delta_card,
     "trace_source_chain": trace_source_chain,
+    "rate_sources": rate_sources,
+    "dedupe_items": dedupe_items,
+    "parse_time_range": parse_time_range,
 }
 
 
