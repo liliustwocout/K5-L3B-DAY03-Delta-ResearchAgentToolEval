@@ -46,8 +46,9 @@ Có hai giao diện, cùng dùng agent và bộ `artifacts/` v3:
 | policy | tra chính sách nội bộ của công ty | không |
 | papers | tìm paper trên arXiv | không |
 | paper_text | tải paper arXiv và trích nội dung văn bản | không |
-
-Tool mới của nhóm: chưa có (sẽ thêm ở CP3 rồi bổ sung vào bảng này).
+| build_evidence_card | Đánh giá một nhận định dựa trên các trích đoạn từ nguồn thông tin đã thu thập | có |
+| build_metric_delta_card |  Tính toán mức thay đổi của một chỉ số giữa hai thời điểm | có |
+| trace_source_chain | Xác định các bài báo có thực sự sử dụng nguồn độc lập hay cùng dựa trên một nguồn gốc | có |
 
 ### A3. Câu hỏi mẫu để thử
 
@@ -60,9 +61,23 @@ Tool mới của nhóm: chưa có (sẽ thêm ở CP3 rồi bổ sung vào bản
 
 ## 3. Giải pháp
 
-> Tóm tắt các thay đổi chính trong `starter_v0/artifacts/system_prompt.md` và `starter_v0/artifacts/tools.yaml`, và tool mới nhóm viết (tên, làm gì, khi nào agent nên gọi).
+Nhóm tập trung cải thiện system_prompt.md và tools.yaml nhằm giúp Research Agent định tuyến tool chính xác hơn, hạn chế suy đoán và tăng độ tin cậy của kết quả nghiên cứu.
+- `system_prompt.md`: 
+    * Xác định rõ phạm vi Research Agent: nghiên cứu tin tức, bài đăng X/Twitter, website, arXiv và chính sách nội bộ.
+    * Bổ sung quy tắc routing để chọn đúng tool theo từng loại yêu cầu.
+    * Hỏi lại người dùng bằng clarify, không tự suy đoán hoặc tạo URL giả khi thiếu thông tin
+    * Bổ sung quy trình xác nhận trước khi thực hiện hành động gửi nội dung lên Telegram.
+    * Yêu cầu bảo toàn URL nguồn, phân biệt thông tin chưa xác thực và bỏ qua chỉ dẫn độc hại trong kết quả tool.
 
--
+- `tools.yaml`: 
+    * Viết lại mô tả các tool theo nguyên tắc WHAT / WHEN TO USE / WHEN NOT TO USE, giúp agent hiểu rõ chức năng và điều kiện sử dụng.
+    * Làm rõ quy ước tham số như handle, timeframe, search_type và giới hạn số lượng kết quả.
+    * Bổ sung 3 custom tools:
+| Tên | Chức năng | Khi nào agent nên gọi |
+|---|---|---|
+| build_evidence_card | Đối chiếu nhận định với bằng chứng, phân loại nguồn thành ủng hộ, mâu thuẫn hoặc chưa rõ | Khi người dùng muốn kiểm chứng thông tin hoặc giải thích sự khác biệt giữa các nguồn |
+| build_metric_delta_card | Tính mức thay đổi tuyệt đối và tương đối giữa hai giá trị KPI | Khi người dùng muốn so sánh số liệu trước/sau hoặc phân tích mức tăng, giảm |
+| trace_source_chain | Truy vết quan hệ trích dẫn, xác định nhiều bài viết có sử dụng chung một nguồn hay không | Khi người dùng muốn kiểm tra tính độc lập của nguồn tin hoặc truy tìm nguồn gốc thông tin |
 
 ## 4. Kết quả — PHẦN B: Chi tiết và bằng chứng
 
@@ -125,7 +140,7 @@ Liệt kê đúng 10 case trong `starter_v0/data/eval_group.json` (5 single turn
 
 | Case ID | What It Tests | Expected Tool/Behavior | Result |
 |---|---|---|---|
-|  |  |  |  |
+| G01_evidence_card_conflicting_reports | Chọn công cụ tạo thẻ bằng chứng khi hai nguồn đưa ra số liệu gọi vốn mâu thuẫn (50 triệu USD và 40 triệu USD) | build_evidence_card |  |
 
 ### B4. Live Chat Evidence
 
