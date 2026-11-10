@@ -89,6 +89,35 @@ tools:
             required: [url, summary, stance]
       required: [claim, evidence]
 
+  - name: build_metric_delta_card
+    description: "Calculate the absolute and relative change between two observations of the same metric. Use when the user asks how much a metric rose or fell, or requests a before/after KPI card. Use supplied or collected observations. Preserve both periods and units. A source URL belongs inside its observation. Omit url when no source URL is available. Ask for missing values or units and never invent data."
+    parameters:
+      type: object
+      additionalProperties: false
+      properties:
+        metric: {type: string, description: "Short name of the metric being compared."}
+        baseline:
+          type: object
+          additionalProperties: false
+          description: "The earlier observation."
+          properties:
+            value: {type: number, description: "Numeric value, e.g. 20 for 20%."}
+            period: {type: string, description: "Label for this period as given by the user or source."}
+            unit: {type: string, description: "Unit, e.g. %, USD, users. Match the current observation."}
+            url: {type: string, description: "HTTP(S) source URL when supplied or retrieved."}
+          required: [value, period, unit]
+        current:
+          type: object
+          additionalProperties: false
+          description: "The later observation."
+          properties:
+            value: {type: number, description: "Numeric value, e.g. 26 for 26%."}
+            period: {type: string, description: "Label for this period as given by the user or source."}
+            unit: {type: string, description: "Unit, e.g. %, USD, users. Match the baseline observation."}
+            url: {type: string, description: "HTTP(S) source URL when supplied or retrieved."}
+          required: [value, period, unit]
+      required: [metric, baseline, current]
+
   # ---------------- Bonus tools ----------------
   - name: send
     description: "Post text to the Telegram channel. SIDE EFFECT. Only call with confirmed=true AFTER the user explicitly said yes to the exact text in a previous turn. If not yet confirmed, call clarify(response_type=yes_no) instead."

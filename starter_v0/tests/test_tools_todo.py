@@ -164,3 +164,56 @@ def test_evidence_card_returns_error_for_malformed_source_url() -> None:
     assert card["error"] == "ValueError"
     assert "evidence[0].url" in card["message"]
     assert "markdown" not in card
+
+
+def test_metric_card_distinguishes_percentage_points_from_relative_change() -> None:
+    card = TOOL_FUNCTIONS["build_metric_delta_card"](
+        "Tỷ lệ chuyển đổi",
+        {"value": 20, "period": "Tháng 9", "unit": "%", "url": "https://example.com/september"},
+        {"value": 26, "period": "Tháng 10", "unit": "%", "url": "https://example.org/october"},
+    )
+
+    assert card["absolute_delta"] == 6
+    assert card["relative_change_percent"] == 30
+    assert card["absolute_display"] == "+6 điểm phần trăm"
+    assert card["relative_display"] == "+30%"
+    assert "[Nguồn kỳ gốc](https://example.com/september)" in card["markdown"]
+    assert "[Nguồn kỳ mới](https://example.org/october)" in card["markdown"]
+
+
+@pytest.mark.parametrize("baseline", [0, -5])
+def test_metric_card_omits_relative_change_for_nonpositive_baseline(baseline: int) -> None:
+    card = TOOL_FUNCTIONS["build_metric_delta_card"](
+        "Số lượt",
+        {"value": baseline, "period": "Kỳ 1", "unit": "lượt"},
+        {"value": 5, "period": "Kỳ 2", "unit": "lượt", "url": ""},
+    )
+
+    assert card["absolute_delta"] == 5 - baseline
+    assert card["relative_change_percent"] is None
+    assert card["relative_display"] is None
+    assert card["current"]["url"] is None
+    assert card["relative_note"] in card["markdown"]
+
+
+def test_metric_card_rejects_incompatible_units() -> None:
+    card = TOOL_FUNCTIONS["build_metric_delta_card"](
+        "Doanh thu",
+        {"value": 20, "period": "Kỳ 1", "unit": "USD"},
+        {"value": 26, "period": "Kỳ 2", "unit": "VND"},
+    )
+
+    assert card["error"] == "ValueError"
+    assert "same unit" in card["message"]
+    assert "markdown" not in card
+
+
+def test_metric_card_rejects_non_numeric_observation() -> None:
+    card = TOOL_FUNCTIONS["build_metric_delta_card"](
+        "Doanh thu",
+        {"value": 20, "period": "Kỳ 1", "unit": "USD"},
+        {"value": "26", "period": "Kỳ 2", "unit": "USD"},
+    )
+
+    assert card["error"] == "ValueError"
+    assert "current.value" in card["message"]
