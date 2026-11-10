@@ -43,7 +43,7 @@ tools:
       required: [query]
 
   - name: fetch
-    description: "Read the content of ONE concrete URL (Firecrawl). Use when the user asks to read or summarize the link, or when a needed source has no excerpt. For a claim comparison with excerpts already provided, use build_evidence_card directly. Never invent a URL (use clarify to ask)."
+    description: "Read the content of ONE concrete URL (Firecrawl). Use when the user asks to read or summarize the link, or when a needed source has no excerpt. For a claim comparison or source trace with the evidence or citation relationships already provided, use the corresponding analysis tool directly. Never invent a URL (use clarify to ask)."
     parameters:
       type: object
       properties:
@@ -117,6 +117,31 @@ tools:
             url: {type: string, description: "HTTP(S) source URL when supplied or retrieved."}
           required: [value, period, unit]
       required: [metric, baseline, current]
+
+  - name: trace_source_chain
+    description: "Trace where a story comes from, or check whether multiple reports rely on a shared source. Use when the user asks about source independence, a citation chain, or a source map. Call directly when document URLs and direct citation relationships are already provided. Include every supplied document as its own article, including a known endpoint with an empty cites array. Include only confirmed citation links relevant to the story."
+    parameters:
+      type: object
+      additionalProperties: false
+      properties:
+        articles:
+          type: array
+          description: "All supplied documents, including each supplied terminal source with cites: []. Omit only destinations whose details were not supplied or verified."
+          minItems: 1
+          maxItems: 12
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              url: {type: string, description: "Actual HTTP(S) URL of this document."}
+              title: {type: string, description: "Short title if known."}
+              cites:
+                type: array
+                maxItems: 12
+                items: {type: string}
+                description: "Direct citation URLs for this story. Use [] if this supplied document ends the chain. If a cited document was not supplied or examined, keep its URL here and omit its document entry."
+            required: [url, cites]
+      required: [articles]
 
   # ---------------- Bonus tools ----------------
   - name: send
