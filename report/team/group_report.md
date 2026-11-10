@@ -121,11 +121,42 @@ Nguyên nhân chung của v0: prompt gốc bảo "đừng hỏi lại, cứ đo�
 
 ### B3. Team Eval Cases
 
-Liệt kê đúng 10 case trong `starter_v0/data/eval_group.json` (5 single turn + 5 multi turn).
+Dataset: [eval_group.json](../../starter_v0/data/eval_group.json), đúng **10 case: G01–G05 single turn (`query`), G06–G10 multi turn (`turns`)**. Các case có `phase=B`, `failure_type`, `expect` và `metadata.what_it_tests`. Bộ này kiểm tra 5 tool mới: `build_evidence_card`, `build_metric_delta_card`, `rate_sources`, `parse_time_range`, `dedupe_items`.
+
+Chạy một lần bằng **OpenAI / `gpt-4o-mini`**, nhãn `v3`, suite `group`. Cấu hình máy chạy CP4 có key OpenAI; không có key Gemini/OpenRouter. Preflight OpenAI thành công. Bằng chứng: [run group JSON](../../starter_v0/runs/v3_B_group_openai_20261110T233006708870.json).
+
+```bash
+cd starter_v0
+.venv/bin/python run_eval.py --provider openai --model gpt-4o-mini --version v3 --suite group --eval-cases data/eval_group.json
+```
+
+Run hợp lệ: `total_cases=10`, `measured_cases=10`, `provider_error_cases=0`. Kết quả tự động: **6/10 PASS**, `case_accuracy=0.60`, `tool_routing_accuracy=0.70`, `argument_accuracy=0.60`, `multiturn_accuracy=0.40` (2/5); single turn đạt 4/5. Đây là điểm routing/args, không phải tỷ lệ tool thực thi thành công.
+
+Artifact thực tế là `v3+p9a9569d2ab55+tbaba4f942a39`, dùng prompt/tools hiện tại đã có tool mới CP3. Hash đầy đủ nằm trong run JSON. Không so sánh trực tiếp 0.60 với điểm base v3 0.95 ở B1 vì khác bộ case, provider/model và hash artifact.
 
 | Case ID | What It Tests | Expected Tool/Behavior | Result |
 |---|---|---|---|
-|  |  |  |  |
+| G01_evidence_card_conflicting_reports | Single: route tới tool mới khi hai trích đoạn có số liệu mâu thuẫn | `build_evidence_card`; không cần đọc lại URL đã có trích đoạn | **PASS**; tool trả `status=mixed`, giữ đúng hai URL và hai nhãn supports/contradicts |
+| G02_metric_delta_percentage_points | Single: giữ đúng số, kỳ đo và đơn vị phần trăm | `build_metric_delta_card(baseline={value:20, period:"tháng 9", unit:"%"}, current={value:26, period:"tháng 10", unit:"%"})` | **PASS theo bộ chấm**, nhưng tool lỗi `TypeError` vì model thêm `url=""` ở cấp ngoài cùng |
+| G03_rate_sources_credibility | Single: truyền đủ 3 URL cho một lời gọi tool đánh giá nguồn | Một `rate_sources(urls=[arxiv, reddit, reuters])` với URL đầy đủ từ input | **FAIL**; model tách thành 3 lời gọi, mỗi lần 1 URL; bị chấm sai args và dư 2 lời gọi |
+| G04_parse_time_range_explicit_dates | Single: dùng ngày tham chiếu cố định, không phụ thuộc ngày chạy | `parse_time_range(text="3 ngày qua", today="2026-11-10")` | **PASS**; tool trả 2026-11-08 đến 2026-11-10, 3 ngày |
+| G05_unnecessary_tool_greeting | Single: lời chào không cần tool | `no_tool=true` | **PASS**; không có lời gọi tool |
+| G06_multiturn_clarify_then_rate_sources | Multi: dùng đúng 2 URL đã bổ sung trong lịch sử | Một `rate_sources(urls=[arxiv, medium])`; không hỏi lại URL đã có | **FAIL**; model tách thành 2 lời gọi, mỗi lần 1 URL; bị chấm sai args và dư 1 lời gọi |
+| G07_multiturn_metric_unit_carryover | Multi: giữ số 100/120, đơn vị tỷ VND và Q1 là kỳ gốc | `build_metric_delta_card(baseline={value:100, period:"Q1", unit:"tỷ VND"}, current={value:120, period:"Q2", unit:"tỷ VND"})` | **PASS**; tool trả chênh lệch +20 tỷ VND, thay đổi tương đối +20% |
+| G08_multiturn_switch_from_news_to_policy | Multi: theo yêu cầu mới chuyển từ web sang policy nội bộ | `policy(policy_area="tool_usage")`; không gọi `lookup` | **FAIL**; đúng tool `policy`, nhưng `policy_area="all"` thay vì `tool_usage` |
+| G09_multiturn_unconfirmed_send_boundary | Multi: có nội dung trong lịch sử nhưng chưa xác nhận gửi | `clarify(response_type="yes_no")`; không gọi `send` | **PASS**; câu hỏi nhắc đúng nội dung thử nghiệm cần xác nhận, chưa gửi Telegram |
+| G10_multiturn_dedupe_then_format | Multi: dùng items từ lịch sử, loại trùng và yêu cầu digest dạng bullets | `dedupe_items` và `format(template="bullets")` | **FAIL**; chỉ có `dedupe_items`, thiếu `format`; tool loại 1 item trùng, giữ 2 item |
+
+**Phân tích lỗi và giới hạn của phép đo:**
+
+- `failure_type` là nhãn thiết kế case; lỗi quan sát cần đọc `observed_mismatch` và `failures`. Ví dụ G06 mang nhãn `missing_info` nhưng model không thiếu URL: lỗi chấm thực tế là `wrong_arg_value` và dư lời gọi. Ba case G03/G06/G08 có `observed_mismatch=wrong_arg_value`; G10 là `missing_tool_call`.
+- G03/G06 trả kết quả cho đủ URL, nhưng không đạt kỳ vọng một lời gọi chứa cả danh sách. Đây là lỗi so với contract của case và số lượng lời gọi, không phải model bỏ mất nguồn. Giả thuyết cho vòng tối ưu sau: mô tả rõ việc gộp URL vào một `rate_sources(urls=[...])` thay vì áp dụng rule nhiều nguồn độc lập thành nhiều lời gọi cùng tool.
+- G08 cần làm rõ mapping chủ đề dùng tool AI sang `policy_area=tool_usage`. Kết quả tra cứu hiện vẫn có tài liệu thuộc vùng này, nhưng tham số lọc chưa đúng kỳ vọng.
+- G02 cho thấy giới hạn của chấm args theo subset: tham số ngoài `expect` không bị kiểm tra và tool error không làm case tự động FAIL. Lời gọi có các giá trị được chấm đúng nhưng thêm `url` không có trong signature, nên **chưa tạo được thẻ +6 điểm phần trăm / +30%**. Cần sửa cách model tạo args hoặc kiểm tra schema trước thực thi ở vòng sau; không được coi PASS này là thành công đầu cuối.
+- `turns` là lịch sử dựng sẵn; `case_messages()` chỉ yêu cầu model trả lời lượt user cuối. G06 không chứng minh model đã tự hỏi lại ở lượt trước. `ResearchAgent.run()` chỉ gọi model một lần rồi thực thi các tool, không đưa kết quả tool trở lại model. Vì vậy G10 ghi nhận thiếu `format`, nhưng chưa tách được lỗi model khỏi giới hạn runner đối với chuỗi `dedupe_items` → `format`. Bộ chấm cũng không kiểm tra thứ tự gọi tool.
+- `expect.tool_calls[].args` chỉ chứa tham số quyết định hành vi; ví dụ không ép nguyên văn câu hỏi `clarify` hoặc tên metric. G01 chỉ chấm routing, phần nhãn bằng chứng được đọc thủ công từ `tool_results`. `no_tool` ở G05 chỉ kiểm tra không gọi tool, không chấm chất lượng câu chào.
+
+Kiểm tra offline: **118 passed, 14 skipped, 0 failed** cho suite hiện có; 14 skip là TODO cũ. Sau khi sửa dataset, chạy lại contract: **85 passed**. Kiểm tra thêm đúng 10 ID duy nhất, 5 `query` + 5 `turns`, trường bắt buộc và tool được khai báo. Giữ nguyên kết quả run, không sửa kỳ vọng hoặc prompt sau khi xem điểm để biến FAIL thành PASS.
 
 ### B4. Live Chat Evidence
 
