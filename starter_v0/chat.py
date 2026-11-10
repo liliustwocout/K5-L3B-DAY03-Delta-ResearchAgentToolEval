@@ -65,8 +65,8 @@ def tool_results_message(events: list[dict[str, Any]]) -> dict[str, str]:
             "Use only these tool results as source evidence for the user's request. "
             "If the user requested a Telegram post and has not approved the exact text, "
             "call clarify with response_type=yes_no and include the exact proposed text. "
-            "Use the returned markdown verbatim if an evidence card is ready. "
-            "If the user requested only an evidence card, show it with its source links. "
+            "Use the returned markdown verbatim if an evidence or metric card is ready. "
+            "If the user requested only a card, show it with its available source links. "
             "If the user asked for a digest and the items are ready, call the formatting tool. "
             "Otherwise answer directly with cited sources when available."
         ),
@@ -91,6 +91,7 @@ def run_model_tool_loop(
     max_tool_rounds: int,
 ) -> dict[str, Any]:
     working_messages = list(messages)
+    declared_names = {tool["function"]["name"] for tool in tools}
     rounds: list[dict[str, Any]] = []
     all_tool_events: list[dict[str, Any]] = []
 
@@ -118,7 +119,14 @@ def run_model_tool_loop(
 
         for call in calls:
             print(f"🔧 {call.name}({json.dumps(call.args, ensure_ascii=False, sort_keys=True)})")
-            event = execute_tool_call(call)
+            if call.name in declared_names:
+                event = execute_tool_call(call)
+            else:
+                event = {
+                    "tool": call.name,
+                    "args": call.args,
+                    "result": {"error": "tool_unavailable", "message": "This tool is unavailable in this session."},
+                }
             round_record["tool_results"].append(event)
             all_tool_events.append(event)
 

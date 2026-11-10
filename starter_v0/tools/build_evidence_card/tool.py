@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-import re
 from typing import Any
-from urllib.parse import quote, urlsplit
 
-from tools._shared import err
+from tools._shared import err, telegram_markdown_text, telegram_markdown_url
 
 
 HEADINGS = {
@@ -12,20 +10,6 @@ HEADINGS = {
     "contradicts": "⚠️ Nguồn đưa thông tin khác",
     "unclear": "🧩 Nguồn chưa đủ rõ",
 }
-
-
-def _markdown_text(value: str) -> str:
-    return re.sub(r"([_*`\[])", r"\\\1", " ".join(value.split()))
-
-
-def _markdown_url(url: Any, index: int) -> str:
-    if not isinstance(url, str) or any(char.isspace() or ord(char) < 32 for char in url):
-        raise ValueError(f"evidence[{index}].url must be an HTTP(S) URL")
-    parts = urlsplit(url)
-    if parts.scheme not in {"http", "https"} or not parts.hostname or parts.username is not None or "\\" in url:
-        raise ValueError(f"evidence[{index}].url must be an HTTP(S) URL without credentials")
-    # Encode parentheses so the URL cannot terminate the Telegram Markdown link.
-    return quote(url, safe=":/?#[]@!$&'*+,;=%")
 
 
 def build_evidence_card(claim: str, evidence: list[dict[str, str]]) -> dict[str, Any]:
@@ -45,8 +29,8 @@ def build_evidence_card(claim: str, evidence: list[dict[str, str]]) -> dict[str,
             summary = item.get("summary")
             if not isinstance(summary, str) or not summary.strip():
                 raise ValueError(f"evidence[{index}].summary must be a non-empty string")
-            url = _markdown_url(item.get("url"), index)
-            groups[stance].append(f"• [Nguồn {index + 1}]({url}) — {_markdown_text(summary)}")
+            url = telegram_markdown_url(item.get("url"), f"evidence[{index}].url")
+            groups[stance].append(f"• [Nguồn {index + 1}]({url}) — {telegram_markdown_text(summary)}")
 
         if groups["supports"] and groups["contradicts"]:
             status = "mixed"
@@ -61,7 +45,7 @@ def build_evidence_card(claim: str, evidence: list[dict[str, str]]) -> dict[str,
             status = "insufficient"
             conclusion = "Chưa đủ bằng chứng trong các nguồn được cung cấp để đánh giá nhận định."
 
-        sections = [f"🔎 *Đối chiếu bằng chứng*\n{_markdown_text(claim)}"]
+        sections = [f"🔎 *Đối chiếu bằng chứng*\n{telegram_markdown_text(claim)}"]
         for stance, entries in groups.items():
             if entries:
                 sections.append("\n".join([f"*{HEADINGS[stance]}*", *entries]))

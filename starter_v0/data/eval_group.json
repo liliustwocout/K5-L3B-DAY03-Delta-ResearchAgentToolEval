@@ -15,6 +15,18 @@
       "metadata": {
         "what_it_tests": "Chọn công cụ tạo thẻ bằng chứng khi đã có trích đoạn và URL của hai nguồn đưa số liệu mâu thuẫn."
       }
+    },
+    {
+      "id": "G02_metric_delta_percentage_points",
+      "phase": "B",
+      "query": "Tạo thẻ so sánh tỷ lệ chuyển đổi từ tháng 9 (20%) sang tháng 10 (26%). Dùng hai số liệu minh họa đã cho và phân biệt điểm phần trăm với phần trăm thay đổi tương đối.",
+      "failure_type": "wrong_tool",
+      "expect": {
+        "tool_calls": [{"name": "build_metric_delta_card", "args": {}}]
+      },
+      "metadata": {
+        "what_it_tests": "Chọn công cụ tính mức thay đổi khi người dùng cung cấp hai kỳ cùng đơn vị phần trăm."
+      }
     }
   ]
 }
