@@ -227,9 +227,15 @@ Chi tiết đóng góp của từng thành viên nằm trong [TEAM.md](../../TEA
 ## 7. Hạn chế và hướng cải thiện — B6. Reflection
 
 - Fix nào thuộc `system_prompt.md`?
+Bổ sung hướng dẫn để Agent nhận diện đúng ý định người dùng, lựa chọn tool phù hợp và xử lý trường hợp thiếu hoặc mâu thuẫn thông tin.
+
 - Fix nào thuộc `tools.yaml`?
+Mô tả rõ chức năng, input schema, kiểu dữ liệu và điều kiện sử dụng của từng tool để hạn chế truyền sai tham số.
+
 - Failure nào cần review thủ công thay vì chấm tự động?
+Những trường hợp có nguồn dữ liệu mâu thuẫn, thông tin không đầy đủ hoặc kết quả phụ thuộc vào ngữ cảnh và phán đoán của con người.
 - Nếu có thêm một vòng, nhóm sẽ thử giả thuyết nào?
+Nếu cải thiện mô tả tool và bổ sung ví dụ vào system prompt, tỷ lệ chọn đúng tool sẽ tăng và số lỗi gọi tool sẽ giảm.
 
 ## 8. Tài liệu tham khảo
 
