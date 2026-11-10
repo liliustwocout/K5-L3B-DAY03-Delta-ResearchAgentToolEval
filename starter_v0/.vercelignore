@@ -11,3 +11,9 @@ arxiv_papers/
 artifacts/versions/
 __pycache__/
 *.pyc
+# Giao diện Streamlit và server local không dùng trên Vercel
+app.py
+dev_server.py
+# Bản deploy cài gói từ pyproject.toml (requirements.txt có streamlit, pytest: quá nặng)
+requirements.txt
+pytest.ini

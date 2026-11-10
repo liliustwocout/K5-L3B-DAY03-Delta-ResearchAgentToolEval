@@ -1,0 +1,14 @@
+# Cấu hình cho bản deploy Vercel (giao diện web). Chạy local và test vẫn dùng requirements.txt.
+[project]
+name = "research-agent-web"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+  "requests>=2.31.0",
+  "PyYAML>=6.0",
+  "google-genai>=0.8.0",
+  "pypdf>=4.0.0",
+]
+
+[tool.vercel]
+entrypoint = "api.chat:handler"
