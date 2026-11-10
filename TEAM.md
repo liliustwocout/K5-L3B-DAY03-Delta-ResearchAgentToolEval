@@ -3,8 +3,8 @@
 ## Thông tin nhóm
 
 - Tên nhóm:
-- Lớp: L3A / L3B
-- Repo nhóm: `K5-L3A-DAY03-TenNhom-ResearchAgentToolEval` hoặc `K5-L3B-DAY03-TenNhom-ResearchAgentToolEval` (xem [SUBMISSION.md](SUBMISSION.md))
+- Lớp: L3B
+- Repo nhóm: https://github.com/liliustwocout/K5-L3B-DAY03-Delta-ResearchAgentToolEval
 - URL repo, nhánh nộp, commit chốt:
 
 ## Thành viên
