@@ -70,6 +70,20 @@ Nhận định từ log: v2 là bước hiệu quả nhất (+0.20) nhờ quy ư
 - 12 unit test (mỗi tool 4 test) trong `starter_v0/tests/test_tools_todo.py`; các case G03, G04, G06, G10 của Huy kiểm tra việc model chọn các tool này.
 - **Test challenge:** điền 14 test còn skipped của các tool có sẵn (clarify, format, send, lookup, fetch, timeline, social_search, policy). `pytest` hiện là 132 passed, 0 skipped.
 
+### 3.6. Chạy model local (bonus Small Local Model)
+
+- Tôi chạy base eval 20 câu bằng Ollama với prompt và tool v3, không sửa gì, trên hai model local. Cả hai run đều hợp lệ (20/20 câu đo được, không lỗi provider).
+
+| Model | Điểm (`case_accuracy`) | Câu sai |
+|---|---:|---|
+| Gemini (cloud, để so sánh) | 0.95 (19/20) | R12 |
+| qwen3:4b | 0.90 (18/20) | R12, R13 |
+| llama3.2:3b | 0.25 (5/20) | 15 câu: chọn sai tool, không hỏi lại khi thiếu thông tin, gọi tool cho câu ngoài phạm vi, truyền số thành chuỗi |
+
+- Hai model có cỡ gần nhau (3B và 4B) mà chênh 0.65 điểm. Tôi cho rằng nguyên nhân nhiều khả năng là kiến trúc và cách huấn luyện khác nhau (Llama 3.2 và Qwen3 khác họ model) hơn là số tham số; đây là giả thuyết, chưa kiểm chứng vì chưa có model cùng họ khác cỡ. Kết luận từ hai vòng tối ưu: với model nhỏ, chỉnh prompt chỉ thu hẹp một phần khoảng cách (0.25 lên 0.40), còn đổi sang model có khả năng gọi tool tốt hơn tăng nhiều hơn.
+- Hai vòng tối ưu cho llama3.2:3b: `v4-local` (prompt ngắn kèm ví dụ few-shot, file `artifacts/system_prompt_local_v4.md`) tăng từ 0.25 lên 0.40; `v5-local` (bớt xuống 6 tool, `artifacts/tools_local_v5.yaml`) giữ 0.40. Kiểm tra ngược trên Gemini được 1.00. Chi tiết và kết luận ở mục B7 báo cáo nhóm.
+- Hạn chế: mỗi run chỉ chạy một lần; model 3B vẫn còn nhiều lỗi (truyền số thành chuỗi, từ khóa dài, hỏi lại không đúng chỗ) mà hai vòng này chưa sửa được.
+
 ## 4. Bằng chứng
 
 - File/commit/PR:
@@ -78,18 +92,20 @@ Nhận định từ log: v2 là bước hiệu quả nhất (+0.20) nhờ quy ư
   - Deploy Vercel: commit `f49d712`, `6d997fa`, `ebe2a3d`; giao diện đang chạy tại https://k5-l3-b-day-03-delta-research-agent.vercel.app/.
   - Chọn phiên bản và bảng so sánh: commit `0abe7ef` (`public/index.html`, `public/versions.json`, `webapp/core.py`).
   - Ba tool bổ sung và test: commit `9f8e764`, `0ad7384`.
+  - Model local: 5 file run `starter_v0/runs/v3-qwen3-4b_*`, `v3-llama3b_*`, `v4-local-llama3b_*`, `v5-local-llama3b_*`, `v5-local-gemini_*`; prompt và tool riêng `starter_v0/artifacts/system_prompt_local_v4.md`, `tools_local_v5.yaml`; 5 dòng tương ứng trong `starter_v0/artifacts/version_log.csv`.
   - Test challenge và sửa provider Gemini: `starter_v0/tests/test_tools_todo.py`, `starter_v0/providers/gemini_provider.py`.
 - AI/công cụ đã dùng và cách tự kiểm tra kết quả: tôi dùng Claude Code (Claude Sonnet 5.5) để hỗ trợ viết code, test, phân tích log và soạn báo cáo. Kết quả được kiểm tra bằng `pytest`, chỉ dùng run eval hợp lệ và đối chiếu số liệu với `version_log.csv` cùng các file run JSON; không dùng AI để tạo run, metric hay transcript giả.
 
 ## 5. Tự đánh giá
 
-Làm được: có baseline hợp lệ và vòng tối ưu có số đo từ 0.70 lên 0.95; tích hợp Telegram gửi thật có xác nhận; giao diện chat chạy được trên Vercel với chọn phiên bản và bảng so sánh; thêm 3 tool; hoàn tất test challenge.
+Làm được: có baseline hợp lệ và vòng tối ưu có số đo từ 0.70 lên 0.95; tích hợp Telegram gửi thật có xác nhận; giao diện chat chạy được trên Vercel với chọn phiên bản và bảng so sánh; thêm 3 tool; hoàn tất test challenge; chạy baseline hợp lệ trên 2 model local (qwen3:4b 0.90, llama3.2:3b 0.25).
 
 Hạn chế:
 
 - Mỗi version chỉ chạy một lần, nên chênh lệch nhỏ giữa các lần có thể là ngẫu nhiên.
 - v3 không tăng điểm so với v2, và v3 thay đổi cùng lúc cả prompt lẫn mô tả mọi tool nên khó tách phần nào đóng góp. Bản hiện tại (v4) thấp hơn v3 một chút (0.90 so với 0.95), chưa rõ do thêm tool hay do dao động giữa các lần chạy.
 - Câu R12 vẫn chưa được sửa ở mọi version.
+- Bản prompt và tool cho model local chỉ kiểm tra trên bộ base (20 câu); bản 6 tool bỏ mất `format`, `policy`, `papers`, `paper_text` nên không thay thế được `tools.yaml` đầy đủ.
 - Bộ chấm chỉ so khớp tên tool và tham số, không đánh giá chất lượng câu trả lời hay kết quả cuối của tool.
 - Việc deploy mất nhiều vòng sửa lỗi vì khác biệt giữa môi trường máy và Vercel (phiên bản thư viện, giới hạn dung lượng).
 - Giới hạn 5 tin mỗi giờ cho mỗi chat ID đếm trong bộ nhớ của từng instance, nên là hàng rào yếu trên Vercel.

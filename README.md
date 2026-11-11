@@ -95,7 +95,7 @@ Tool có sẵn (`send`, `policy`, `papers`, `paper_text`) không tự được b
 
 **Bonus (tuỳ chọn)**
 - [x] `send` gửi thật lên Telegram sau khi user xác nhận, có transcript chứng minh
-- [ ] Small Local Model Challenge (Step 7)
+- [x] Small Local Model Challenge (Step 7)
 - [x] Hơn 3 tool mới (≥ 4), mỗi tool ≥ 3 test
 - [x] Test challenge: `pytest` 0 failed, 0 skipped toàn suite
 

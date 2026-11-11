@@ -235,7 +235,7 @@ Chỉ điền nếu nhóm làm bonus (ghi riêng, tối đa 10 điểm). Tool c�
 
 | Bonus | Evidence File | What Worked | Risk / Guardrail |
 |---|---|---|---|
-| Small Local Model | xem B7 | Nhóm chưa làm bonus này. |  |
+| Small Local Model | xem B7 | Chạy baseline 2 model local (qwen3:4b 0.90, llama3.2:3b 0.25), 2 vòng tối ưu cho llama3.2:3b (0.25 lên 0.40, rồi 0.40), kiểm tra ngược trên Gemini 1.00; mọi run hợp lệ. | Mỗi model chỉ chạy một lần nên điểm có thể dao động; llama3.2:3b sai 15/20 câu, chưa tối ưu. |
 | Hơn 3 tool mới (≥ 4) | `starter_v0/tools/` | 6 tool nhóm tự viết: `build_evidence_card`, `build_metric_delta_card`, `trace_source_chain`, `rate_sources`, `dedupe_items`, `parse_time_range`. Mỗi tool có `TOOL.md`, đăng ký và từ 4 đến 5 test; các case G01 đến G04, G06, G07, G10 kiểm tra việc chọn tool. | Bộ chấm chỉ kiểm tra tên tool và tham số, không kiểm tra kết quả cuối của tool. |
 | `send` gửi thật lên Telegram sau xác nhận | `starter_v0/transcripts/v3_gemini_20261110T184506173013.transcript.json` | Luồng: agent hỏi `yes_no`, người dùng trả lời "Có, gửi đi", `send(confirmed=true)` trả `status: sent` | Bản web gửi tới chat ID mà người dùng nhập (giới hạn 5 tin mỗi chat ID mỗi giờ, chỉ phiên bản hiện tại gửi được, `DISABLE_SEND=1` tắt hẳn). Bản CLI gửi vào chat cấu hình trong `.env`; rubric ghi "private channel của nhóm" nên cần xác nhận chat này đúng yêu cầu |
 | Test challenge (0 skipped / regression test) | `pytest` output; [test_tools_todo.py](../../starter_v0/tests/test_tools_todo.py) | Điền 14 test còn skipped của các tool có sẵn: `pytest` 132 passed, 0 skipped. | Test offline dùng `fake_http`, không gọi mạng. |
@@ -244,7 +244,47 @@ Test challenge: không có regression test cho tool có sẵn. Lỗi tìm đư�
 
 ### B7. Small Local Model Challenge (bonus)
 
-Nhóm chưa làm bonus này: chưa có run model local nào trong repo.
+**Trạng thái:** đã chạy baseline 2 model local (llama3.2:3b, qwen3:4b), 2 vòng tối ưu cho llama3.2:3b (`v4-local`, `v5-local`) và kiểm tra ngược trên Gemini. Mọi run đều hợp lệ (20/20 câu đo được, không lỗi provider) và có dòng trong `version_log.csv`.
+
+Chạy bằng Ollama, base eval 20 câu, prompt và tool v3 (`artifacts/versions/system_prompt_v3.md`, `tools_v3.yaml`), không sửa gì. Run hợp lệ: 20/20 câu đo được, không có lỗi provider.
+
+| Model | Kích thước | case_accuracy | tool_routing | argument | multiturn | Run file |
+|---|---|---:|---:|---:|---:|---|
+| Gemini (cloud) | n/a | 0.95 (19/20) | | | | `starter_v0/runs/v3_B_base_gemini_20261110T181506318713.json` |
+| qwen3:4b (local) | 4B | 0.90 (18/20) | 0.95 | 0.90 | 1.00 | `starter_v0/runs/v3-qwen3-4b_B_base_ollama_20261111T101840629760.json` |
+| llama3.2:3b (local) | 3B | 0.25 (5/20) | 0.45 | 0.25 | 0.33 | `starter_v0/runs/v3-llama3b_B_base_ollama_20261111T095919666839.json` |
+
+Lỗi của llama3.2:3b (15 câu sai):
+- Chọn sai tool: R03, R04, R06 (sai cả giá trị `timeframe`), M06.
+- Không hỏi lại khi thiếu thông tin, gọi tool luôn: R10, R11, R12, M01.
+- Câu ngoài phạm vi hoặc không cần tool vẫn gọi tool: R08, R09, R14.
+- Truyền số thành chuỗi (`limit: '10'` thay vì `10`): R05, M05.
+- Sai từ khóa tìm kiếm (`"AI today"` thay vì `"AI"`): R13. Thiếu lời gọi `timeline`: M03.
+
+Lỗi của qwen3:4b (2 câu sai): R12 (hỏi xin nội dung bằng `text` thay vì xác nhận bằng `yes_no`, giống lỗi Gemini) và R13 (gọi `clarify` thay vì chạy song song `lookup` và `social_search`).
+
+Nhận xét:
+- Cùng prompt và tool v3, llama3.2:3b kém Gemini 0.70 điểm, còn qwen3:4b chỉ kém 0.05. Hai model có cỡ gần nhau (3B và 4B) nhưng chênh 0.65 điểm. Chúng tôi cho rằng nguyên nhân nhiều khả năng nằm ở kiến trúc và cách huấn luyện khác nhau (Llama 3.2 và Qwen3 thuộc hai họ model khác nhau, mức huấn luyện cho tool calling có thể khác) hơn là ở số tham số. Đây là giả thuyết, chưa kiểm chứng: cần thêm model cùng họ khác cỡ (ví dụ qwen3:1.7b hoặc qwen3:8b) để tách hai yếu tố.
+- Lỗi của llama3.2:3b khác kiểu lỗi của Gemini: không biết dừng để hỏi lại, gọi tool cho cả câu ngoài phạm vi và truyền số thành chuỗi. Lỗi R12 xuất hiện ở cả Gemini và qwen3:4b.
+- Mỗi run chỉ chạy một lần, nên chênh lệch nhỏ có thể là dao động giữa các lần chạy.
+
+**Hai vòng tối ưu cho llama3.2:3b** (mỗi vòng đổi một thứ so với vòng trước):
+
+| Vòng | Giả thuyết | Thay đổi | case_accuracy | tool_routing | argument | multiturn | Run file |
+|---|---|---|---:|---:|---:|---:|---|
+| baseline v3 | n/a | prompt và tool v3 | 0.25 | 0.45 | 0.25 | 0.33 | xem bảng trên |
+| `v4-local` | Prompt ngắn có thứ tự quyết định và ví dụ few-shot giúp model biết hỏi lại, không gọi tool cho câu ngoài phạm vi | `artifacts/system_prompt_local_v4.md`, tool giữ v3 | 0.40 (8/20) | 0.55 | 0.40 | 0.50 | `starter_v0/runs/v4-local-llama3b_B_base_ollama_20261111T102313605788.json` |
+| `v5-local` | Bớt từ 10 xuống 6 tool giúp model chọn nhầm ít hơn | `artifacts/tools_local_v5.yaml` (bỏ `format`, `policy`, `papers`, `paper_text`), prompt giữ `v4-local` | 0.40 (8/20) | 0.60 | 0.40 | 0.33 | `starter_v0/runs/v5-local-llama3b_B_base_ollama_20261111T102452486334.json` |
+
+Ví dụ trong prompt `v4-local` là câu khác với câu trong bộ eval, không chép câu của eval vào prompt.
+
+**Kiểm tra ngược:** chạy `v5-local` (prompt `v4-local` và 6 tool) trên Gemini được 1.00 (20/20), không giảm so với 0.95 của v3 (`starter_v0/runs/v5-local-gemini_B_base_gemini_20261111T102641354168.json`). Lưu ý bản này bỏ 4 tool nên chỉ so sánh được trên bộ base, không thay thế `tools.yaml` đầy đủ.
+
+**Kết luận có bằng chứng:**
+- Prompt ngắn kèm ví dụ few-shot tăng llama3.2:3b từ 0.25 lên 0.40 (từ 5 lên 8 câu đúng). Đây là thay đổi hiệu quả nhất. R10 chuyển sang không gọi tool sai, nhưng model vẫn trả lời sai kiểu ở R08, R09 (gọi `clarify` thay vì không gọi tool), R11, R12.
+- Bớt tool không làm tăng điểm (vẫn 0.40): `tool_routing` nhích 0.55 lên 0.60 nhưng `multiturn` giảm 0.50 xuống 0.33. Với dữ liệu một lần chạy, chúng tôi không kết luận việc bớt tool có lợi.
+- Các lỗi còn lại của model 3B không sửa được bằng hai vòng này: truyền số thành chuỗi (R05), từ khóa dài (R03), giá trị `timeframe` tiếng Việt (R13), và hỏi lại không đúng chỗ (R08, R09, R11).
+- Model 4B (qwen3:4b) đạt 0.90 ngay với v3 chưa tối ưu, hơn llama3.2:3b sau hai vòng tối ưu (0.40). Trên bộ eval này, đổi từ llama3.2:3b sang qwen3:4b tăng điểm nhiều hơn hai vòng sửa prompt và tool cho llama. Kết luận: với model nhỏ, kiến trúc và cách huấn luyện của model (khả năng gọi tool có sẵn) quyết định điểm nhiều hơn việc chỉnh prompt; prompt ngắn kèm ví dụ chỉ thu hẹp được một phần khoảng cách (0.25 lên 0.40). Đây là kết luận từ một lần chạy mỗi model và hai model khác họ nên chưa kiểm chứng riêng yếu tố kiến trúc.
 
 ## 5. Khó khăn và cách xử lý
 
