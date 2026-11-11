@@ -13,7 +13,7 @@
 | --: | ------ | ---- | ----- | ------ | ------- |
 |   1 | Nguyễn Năng Thịnh | 2A202604028 | thinh010705@gmail.com | Thinh010705 | Thành viên |
 |   2 | Cao Trung Hiếu | 2A202603993 |       |        |         |
-|   3 | Vũ Đình Huy | 2A202603985 |       |        |         |
+|   3 | Vũ Đình Huy | 2A202603985 |huyvudinh1608@gmail.com       |  VNno1TH      |CP4         |
 |   4 | Lê Phạm Thành Đạt | 2A202604027 | 26ai.datlpt@vinuni.edu.vn | liliustwocout | CP3 · Tool mới và unit test |
 
 ## Cá nhân
