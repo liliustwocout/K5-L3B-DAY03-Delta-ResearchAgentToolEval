@@ -7,6 +7,15 @@ from typing import Any
 from providers.base import ModelResponse, ToolCall
 
 
+def _strip_unsupported(node: Any) -> Any:
+    """Gemini từ chối `additionalProperties` (HTTP 400). Chỉ bỏ ở bản gửi cho Gemini; OpenAI vẫn nhận nguyên bản."""
+    if isinstance(node, dict):
+        return {key: _strip_unsupported(value) for key, value in node.items() if key != "additionalProperties"}
+    if isinstance(node, list):
+        return [_strip_unsupported(value) for value in node]
+    return node
+
+
 def _to_gemini_declarations(tools: list[dict[str, Any]] | None) -> list[dict[str, Any]]:
     declarations: list[dict[str, Any]] = []
     for item in tools or []:
@@ -14,7 +23,7 @@ def _to_gemini_declarations(tools: list[dict[str, Any]] | None) -> list[dict[str
         declarations.append({
             "name": function["name"],
             "description": function.get("description", ""),
-            "parameters": function.get("parameters", {"type": "object", "properties": {}}),
+            "parameters": _strip_unsupported(function.get("parameters", {"type": "object", "properties": {}})),
         })
     return declarations
 

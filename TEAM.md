@@ -5,15 +5,15 @@
 - Tên nhóm:Delta
 - Lớp: L3B
 - Repo nhóm: https://github.com/liliustwocout/K5-L3B-DAY03-Delta-ResearchAgentToolEval
-- URL repo, nhánh nộp, commit chốt:
+- URL repo, nhánh nộp, commit chốt: https://github.com/liliustwocout/K5-L3B-DAY03-Delta-ResearchAgentToolEval · nhánh `main` · commit chốt: (điền sau khi commit cuối)
 
 ## Thành viên
 
 | STT | Họ tên | MSSV | Email | GitHub | Vai trò |
 | --: | ------ | ---- | ----- | ------ | ------- |
 |   1 | Nguyễn Năng Thịnh | 2A202604028 | thinh010705@gmail.com | Thinh010705 | Thành viên |
-|   2 | Cao Trung Hiếu | 2A202603993 |       |        |         |
-|   3 | Vũ Đình Huy | 2A202603985 |       |        |         |
+|   2 | Cao Trung Hiếu | 2A202603993 | 26ai.hieuct@vinuni.edu.vn | HieuCaoTlu | CP1–CP2 · Telegram, giao diện chat và deploy |
+|   3 | Vũ Đình Huy | 2A202603985 | huyvudinh1608@gmail.com |        | CP4 · Eval nhóm 10 case |
 |   4 | Lê Phạm Thành Đạt | 2A202604027 | 26ai.datlpt@vinuni.edu.vn | liliustwocout | CP3 · Tool mới và unit test |
 
 ## Cá nhân
@@ -54,33 +54,44 @@ Sao chép mục dưới đây cho từng thành viên.
 - File báo cáo tổng thể của dự án (group_report.md và các tài liệu liên quan).
 - Commit: b690b9e6f3b3712139c669a92a3eb6acbb7c57a1, df1e05cbd6d4eddbf16a1fe78b2d8135a3500ba6, 898c56b8ecbfcec66eafb3bc44f4abb8029cde6d
 
-## HoVaTen-MSSV
+## CaoTrungHieu_2A202603993
 
 ### Phần việc phụ trách
 
--
+- Tích hợp Telegram: agent gửi tin thật sau khi người dùng xác nhận.
+- Cài đặt CP1 đến CP2: baseline v0, tối ưu v1 đến v3, `version_log.csv`, phân tích lỗi.
+- Cải tiến giao diện chat và triển khai (deploy) lên Vercel.
+- So sánh các phiên bản (chọn phiên bản, bảng so sánh) và ranh giới khi gửi tin.
 
 ### Đóng góp cụ thể
 
--
+- Điểm base eval tăng từ 0.70 (v0) lên 0.95 (v2, v3); bản hiện tại (v4, thêm 6 tool) đạt 0.90.
+- 3 tool bổ sung `rate_sources`, `dedupe_items`, `parse_time_range` kèm 12 unit test; điền 14 test còn skipped (132 passed, 0 skipped).
+- Giao diện web chọn phiên bản agent, bảng so sánh, và nhập chat ID Telegram riêng cho từng người.
 
 ### Bằng chứng
 
--
+- Báo cáo cá nhân: [2A202603993_CaoTrungHieu.md](report/team/2A202603993_CaoTrungHieu.md)
+- Commit: `1f041c1`, `90422c3`, `f49d712`, `6d997fa`, `ebe2a3d`, `9f8e764`, `0ad7384`, `0abe7ef`
+- Giao diện đang chạy: https://k5-l3-b-day-03-delta-research-agent.vercel.app/
 
-## HoVaTen-MSSV
+## VuDinhHuy_2A202603985
 
 ### Phần việc phụ trách
 
--
+- CP4 · Eval nhóm 10 case: xây dựng bộ đánh giá riêng của nhóm (5 case một lượt, 5 case nhiều lượt), chạy group eval và phân tích kết quả.
 
 ### Đóng góp cụ thể
 
--
+- Hoàn thiện đúng 10 case trong `eval_group.json`, kiểm tra việc model chọn đúng 5 tool mới, dùng thông tin từ lịch sử hội thoại, không gọi tool khi không cần và hỏi xác nhận trước khi gửi.
+- Chạy group eval bằng OpenAI `gpt-4o-mini` (run hợp lệ 10/10 câu, điểm 6/10 = 0.60) và phân tích lỗi G03, G06, G08, G10 cùng trường hợp G02 chấm PASS nhưng tool lỗi.
+- Hoàn thiện bảng B3 trong báo cáo nhóm, nêu rõ giới hạn của phép đo.
 
 ### Bằng chứng
 
--
+- Báo cáo cá nhân: [2A202603985_VuDinhHuy.md](report/team/2A202603985_VuDinhHuy.md)
+- Bộ case: [eval_group.json](starter_v0/data/eval_group.json); run group: [v3_B_group_openai_20261110T233006708870.json](starter_v0/runs/v3_B_group_openai_20261110T233006708870.json)
+- Commit: `f0efde3` (push cp4), `0a26005` (báo cáo cá nhân)
 
 ## LePhamThanhDat_2A202604027
 

@@ -8,6 +8,7 @@ Eval: `data/eval_base.json` (20 case), Gemini. Mỗi version chạy 1 lần.
 - v1: 0.75 (15/20), sai 5 case
 - v2: **0.95** (19/20), sai 1 case
 - v3: **0.95** (19/20), sai 1 case
+- v4: 0.90 (18/20), sai 2 case
 
 ## v0 (prompt gốc)
 - Điểm: 0.70 (14/20), số case sai: 6. Run hợp lệ (20/20, không lỗi mạng).
@@ -35,3 +36,8 @@ Eval: `data/eval_base.json` (20 case), Gemini. Mỗi version chạy 1 lần.
 - **v2 → v3:** điểm giữ 0.95, cùng một lỗi còn lại.
 - **Lỗi R12 còn ở mọi version:** đề yêu cầu `clarify` kiểu `yes_no`, nhưng model hỏi nội dung bằng `text` vì người dùng chưa đưa nội dung bản tin. Cách tiếp theo: thêm rule "mọi yêu cầu gửi/đăng đều dùng `yes_no`, kể cả khi chưa có nội dung".
 - Không có lần chạy nào gọi `send`, nên không có tin Telegram thật bị gửi.
+
+## v4 (thêm 6 tool mới)
+- Điểm: 0.90 (18/20), số case sai: 2
+- Lỗi: R03, R12
+- Đánh giá: thấp hơn v3 một chút. R03 tái xuất hiện (từ khóa tìm kiếm bị thêm chữ), R12 vẫn chưa sửa. Chưa rõ do thêm tool hay do dao động giữa các lần chạy.

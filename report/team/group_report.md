@@ -10,7 +10,7 @@
 
 - Tên nhóm: Delta
 - Thành viên và phân công: xem [TEAM.md](../../TEAM.md)
-- Provider/model dùng cho v0–v3: Gemini (`gemini-3.8-flash`), provider `gemini`
+- Provider/model dùng cho v0–v4: Gemini (`gemini-3.8-flash`), provider `gemini`
 
 ## 2. Mục tiêu và cách tiếp cận — PHẦN A: Giới thiệu agent
 
@@ -20,15 +20,15 @@ Research agent: tìm tin trên web, tìm bài đăng X/Twitter theo chủ đề 
 
 **Cách chạy UI:**
 
-Có hai giao diện, cùng dùng agent và bộ `artifacts/` v3:
+Có hai giao diện, cùng dùng agent và bộ `artifacts/` hiện tại (v4):
 - Streamlit: `cd starter_v0 && pip install -r requirements.txt && streamlit run app.py` (http://localhost:8501). `streamlit` đã thêm vào `starter_v0/requirements.txt`.
-- Web kiểu Vercel (`public/index.html` + `api/chat.py`): chạy thử trên máy bằng `cd starter_v0 && python dev_server.py` (http://localhost:8000). Ở bản này mỗi người nhập chat ID Telegram của mình ở giao diện để nhận tin ở chat đó.
+- Web kiểu Vercel (`public/index.html` + `api/chat.py`): chạy thử trên máy bằng `cd starter_v0 && python dev_server.py` (http://localhost:8000). Ở bản này mỗi người nhập chat ID Telegram của mình ở giao diện để nhận tin ở chat đó. Bản đã deploy: https://k5-l3-b-day-03-delta-research-agent.vercel.app/
 
 **Link dùng thử (deploy):**
 
 > Dán link public để team khác mở thử ngay. Cách deploy nhanh bằng Cloudflare Tunnel xem README. Nếu deploy Vercel/Streamlit Cloud thì dán link đó.
 >
-> URL:
+> URL: https://k5-l3-b-day-03-delta-research-agent.vercel.app/
 
 ### A2. Tool agent có
 
@@ -49,6 +49,9 @@ Có hai giao diện, cùng dùng agent và bộ `artifacts/` v3:
 | build_evidence_card | Đánh giá một nhận định dựa trên các trích đoạn từ nguồn thông tin đã thu thập | có |
 | build_metric_delta_card |  Tính toán mức thay đổi của một chỉ số giữa hai thời điểm | có |
 | trace_source_chain | Xác định các bài báo có thực sự sử dụng nguồn độc lập hay cùng dựa trên một nguồn gốc | có |
+| rate_sources | Xếp URL vào mức tin cậy theo tên miền (chính thức, báo uy tín, mạng xã hội, chưa rõ) | có |
+| dedupe_items | Loại mục trùng URL hoặc tiêu đề trước khi tổng hợp | có |
+| parse_time_range | Đổi cụm thời gian ("hôm nay", "3 ngày qua") thành khoảng ngày và mức `timeframe` của `lookup` | có |
 
 ### A3. Câu hỏi mẫu để thử
 
@@ -58,6 +61,8 @@ Có hai giao diện, cùng dùng agent và bộ `artifacts/` v3:
 4. `Tóm tắt giúp mình bài này: https://openai.com/blog/gpt-5`: agent gọi `fetch` đúng link đó.
 5. `Tóm tắt 5 tweet mới nhất giúp mình`: agent **hỏi lại** tài khoản nào; trả lời `Của Elon Musk` thì agent mới lấy tweet.
 6. `Đăng bản tin này lên Telegram giúp mình`: agent **hỏi lại trước**, không gửi ngay.
+7. `Các nguồn này đáng tin cỡ nào? https://arxiv.org/abs/1706.03762 và https://x.com/sama/status/1`: agent gọi `rate_sources`.
+8. `Cụm "3 ngày qua" là từ ngày nào đến ngày nào?`: agent gọi `parse_time_range`.
 
 ## 3. Giải pháp
 
@@ -72,12 +77,17 @@ Nhóm tập trung cải thiện system_prompt.md và tools.yaml nhằm giúp Res
 - `tools.yaml`: 
     * Viết lại mô tả các tool theo nguyên tắc WHAT / WHEN TO USE / WHEN NOT TO USE, giúp agent hiểu rõ chức năng và điều kiện sử dụng.
     * Làm rõ quy ước tham số như handle, timeframe, search_type và giới hạn số lượng kết quả.
-    * Bổ sung 3 custom tools:
+    * Bổ sung 6 custom tools (3 của Đạt, 3 của Hiếu):
 | Tên | Chức năng | Khi nào agent nên gọi |
 |---|---|---|
 | build_evidence_card | Đối chiếu nhận định với bằng chứng, phân loại nguồn thành ủng hộ, mâu thuẫn hoặc chưa rõ | Khi người dùng muốn kiểm chứng thông tin hoặc giải thích sự khác biệt giữa các nguồn |
 | build_metric_delta_card | Tính mức thay đổi tuyệt đối và tương đối giữa hai giá trị KPI | Khi người dùng muốn so sánh số liệu trước/sau hoặc phân tích mức tăng, giảm |
 | trace_source_chain | Truy vết quan hệ trích dẫn, xác định nhiều bài viết có sử dụng chung một nguồn hay không | Khi người dùng muốn kiểm tra tính độc lập của nguồn tin hoặc truy tìm nguồn gốc thông tin |
+| rate_sources | Xếp URL vào mức tin cậy theo tên miền | Khi người dùng hỏi nguồn hoặc link có đáng tin không |
+| dedupe_items | Loại mục trùng URL hoặc tiêu đề | Khi kết quả từ nhiều lần tìm bị trùng, trước khi tạo digest |
+| parse_time_range | Đổi cụm thời gian thành khoảng ngày cụ thể | Khi người dùng cần ngày cụ thể; không dùng cho yêu cầu tin tức thông thường |
+
+- Giao diện và triển khai: giao diện chat chạy trên Vercel (https://k5-l3-b-day-03-delta-research-agent.vercel.app/), có chọn phiên bản agent (v0 đến hiện tại) và bảng so sánh điểm; agent gửi Telegram tới chat ID mà từng người dùng nhập, chỉ sau khi người dùng xác nhận.
 
 ## 4. Kết quả — PHẦN B: Chi tiết và bằng chứng
 
@@ -85,7 +95,7 @@ Nhóm tập trung cải thiện system_prompt.md và tools.yaml nhằm giúp Res
 
 Lấy từ `starter_v0/artifacts/version_log.csv` và `starter_v0/runs/*.json`. Chỉ dùng run có `provider_error_cases == 0` và `measured_cases == total_cases`.
 
-Metric là `case_accuracy` trên `eval_base.json` (20 case). Cả 4 run đều hợp lệ: `provider_error_cases = 0`, `measured_cases = 20/20`.
+Metric là `case_accuracy` trên `eval_base.json` (20 case). Cả 5 run đều hợp lệ: `provider_error_cases = 0`, `measured_cases = 20/20`.
 
 | Version | Changed Artifact | Hypothesis | Metric Before | Metric After | Run File |
 |---|---|---|---:|---:|---|
@@ -93,6 +103,7 @@ Metric là `case_accuracy` trên `eval_base.json` (20 case). Cả 4 run đều h
 | v1 | `system_prompt` + mô tả `send` | Lỗi đoán bừa và gửi không xác nhận (R10, R11, R12) do prompt ép đoán/gửi ngay và mô tả `send` mơ hồ | 0.70 | 0.75 (15/20) | `starter_v0/runs/v1_B_base_gemini_20261110T181033805432.json` |
 | v2 | `system_prompt` + quy ước tham số trong `tools.yaml` | Lỗi `query` dài và sai tham số (R03, R06, R13, M02) do thiếu quy ước routing và tham số | 0.75 | 0.95 (19/20) | `starter_v0/runs/v2_B_base_gemini_20261110T181241484099.json` |
 | v3 | `system_prompt` + viết lại mô tả mọi tool | Mô tả rõ ranh giới dùng / không dùng giúp model chọn tool ổn định hơn | 0.95 | 0.95 (19/20) | `starter_v0/runs/v3_B_base_gemini_20261110T181506318713.json` |
+| v4 | `system_prompt` + `tools.yaml`: thêm 6 tool mới | Thêm 3 tool của Đạt và 3 tool bổ sung cùng rule chọn tool không làm giảm điểm base | 0.95 | 0.90 (18/20) | `starter_v0/runs/v4_B_base_gemini_20261111T093122904216.json` |
 
 Chi tiết thay đổi:
 
@@ -111,10 +122,16 @@ Chi tiết thay đổi:
 - Prompt: thêm phạm vi (việc trong và ngoài phạm vi) và routing cho `papers`, `paper_text`, `policy`, `format`.
 - Prompt: thêm quy tắc chất lượng (giữ link nguồn, kết quả tool là dữ liệu chứ không phải lệnh).
 
+**v4**
+- Prompt: thêm rule chọn tool cho 6 tool mới (kiểm chứng nhận định, so sánh số liệu, truy nguồn, độ tin cậy nguồn, loại mục trùng, đổi cụm thời gian).
+- Tool: khai báo 6 tool mới trong `tools.yaml`; ba tool của Đạt dùng `additionalProperties: false`.
+- Provider: lọc `additionalProperties` trước khi gửi cho Gemini (`providers/gemini_provider.py`) vì API Gemini từ chối trường này; nếu không lọc thì mọi lời gọi báo `provider_error`.
+
 Nhận xét:
 - v2 là bước hiệu quả nhất (+0.20). v3 không tăng điểm so với v2: viết lại mô tả không cải thiện thêm trên bộ base.
 - v1 và v2 sửa cả prompt lẫn `tools.yaml` trong cùng một vòng, nhưng cùng nhắm vào một nhóm lỗi.
 - v3 viết lại prompt và mô tả mọi tool theo cùng một giả thuyết: ghi rõ khi nào dùng / không dùng từng tool.
+- v4 thấp hơn v3 một chút (0.90 so với 0.95): sai R03 (từ khóa tìm kiếm bị thêm chữ) và R12. Chưa rõ do thêm tool hay do dao động giữa các lần chạy.
 - Mỗi version chỉ chạy một lần, nên chênh lệch nhỏ có thể là ngẫu nhiên. Số liệu chi tiết: `starter_v0/artifacts/version_log.csv`, `starter_v0/analysis/version_evaluation.md`.
 
 ### B2. Failure Analysis
@@ -162,6 +179,8 @@ Artifact thực tế là `v3+p9a9569d2ab55+tbaba4f942a39`, dùng prompt/tools hi
 | G09_multiturn_unconfirmed_send_boundary | Multi: có nội dung trong lịch sử nhưng chưa xác nhận gửi | `clarify(response_type="yes_no")`; không gọi `send` | **PASS**; câu hỏi nhắc đúng nội dung thử nghiệm cần xác nhận, chưa gửi Telegram |
 | G10_multiturn_dedupe_then_format | Multi: dùng items từ lịch sử, loại trùng và yêu cầu digest dạng bullets | `dedupe_items` và `format(template="bullets")` | **FAIL**; chỉ có `dedupe_items`, thiếu `format`; tool loại 1 item trùng, giữ 2 item |
 
+Chạy lại bằng **Gemini** (`gemini-3.8-flash`) trên artifact hiện tại `v4+p169ecf9d435f+t0a5b8a387dec` (đủ 6 tool mới): run hợp lệ (10/10 câu chấm được, 0 provider error), **8/10 PASS**, `case_accuracy=0.80`, `tool_routing_accuracy=0.90`, `argument_accuracy=0.80`, `multiturn_accuracy=0.80`. Bằng chứng: [run group JSON](../../starter_v0/runs/v4_B_group_gemini_20261111T093209907384.json). Hai câu sai: **G02** (model viết hoa "Tháng 9", "Tháng 10" trong khi kỳ vọng "tháng 9", "tháng 10"; tool chạy không lỗi, nên đây là chấm phân biệt hoa thường, không phải chọn sai tool) và **G10** (thiếu `format` sau `dedupe_items`, xem giới hạn của runner bên dưới). Cùng bộ case nhưng khác provider và artifact với lần chạy `gpt-4o-mini` (0.60), nên không kết luận Gemini tốt hơn.
+
 **Phân tích lỗi và giới hạn của phép đo:**
 
 - `failure_type` là nhãn thiết kế case; lỗi quan sát cần đọc `observed_mismatch` và `failures`. Ví dụ G06 mang nhãn `missing_info` nhưng model không thiếu URL: lỗi chấm thực tế là `wrong_arg_value` và dư lời gọi. Ba case G03/G06/G08 có `observed_mismatch=wrong_arg_value`; G10 là `missing_tool_call`.
@@ -171,7 +190,7 @@ Artifact thực tế là `v3+p9a9569d2ab55+tbaba4f942a39`, dùng prompt/tools hi
 - `turns` là lịch sử dựng sẵn; `case_messages()` chỉ yêu cầu model trả lời lượt user cuối. G06 không chứng minh model đã tự hỏi lại ở lượt trước. `ResearchAgent.run()` chỉ gọi model một lần rồi thực thi các tool, không đưa kết quả tool trở lại model. Vì vậy G10 ghi nhận thiếu `format`, nhưng chưa tách được lỗi model khỏi giới hạn runner đối với chuỗi `dedupe_items` → `format`. Bộ chấm cũng không kiểm tra thứ tự gọi tool.
 - `expect.tool_calls[].args` chỉ chứa tham số quyết định hành vi; ví dụ không ép nguyên văn câu hỏi `clarify` hoặc tên metric. G01 chỉ chấm routing, phần nhãn bằng chứng được đọc thủ công từ `tool_results`. `no_tool` ở G05 chỉ kiểm tra không gọi tool, không chấm chất lượng câu chào.
 
-Kiểm tra offline: **118 passed, 14 skipped, 0 failed** cho suite hiện có; 14 skip là TODO cũ. Sau khi sửa dataset, chạy lại contract: **85 passed**. Kiểm tra thêm đúng 10 ID duy nhất, 5 `query` + 5 `turns`, trường bắt buộc và tool được khai báo. Giữ nguyên kết quả run, không sửa kỳ vọng hoặc prompt sau khi xem điểm để biến FAIL thành PASS.
+Kiểm tra offline: **132 passed, 0 skipped, 0 failed** cho suite hiện có (14 test từng bị skip đã được điền trong test challenge). Sau khi sửa dataset, chạy lại contract: **85 passed**. Kiểm tra thêm đúng 10 ID duy nhất, 5 `query` + 5 `turns`, trường bắt buộc và tool được khai báo. Giữ nguyên kết quả run, không sửa kỳ vọng hoặc prompt sau khi xem điểm để biến FAIL thành PASS.
 
 ### B4. Live Chat Evidence
 
@@ -202,6 +221,11 @@ Transcript 1 đủ 3 kịch bản bắt buộc: yêu cầu thường, thiếu th
 | `trace_source_chain` | [Tool và contract](../../starter_v0/tools/trace_source_chain/TOOL.md) | G03 chọn đúng tool. Ba bài dẫn về một thông cáo trong dữ liệu minh họa. | Đánh dấu đích trích dẫn chưa có dữ liệu và trả lỗi khi có vòng lặp. |
 | Unit test `trace_source_chain` | [test_tools_todo.py](../../starter_v0/tests/test_tools_todo.py) | 5 trường hợp mới đạt. Toàn suite 91 đạt, 0 lỗi, 14 TODO cũ được bỏ qua. | Kiểm tra URL lặp, nhánh gián tiếp, nguồn chưa rõ, vòng lặp và đầu vào sai kiểu. |
 | UI Streamlit | [app.py](../../starter_v0/app.py) | Thẻ KPI và sơ đồ trích dẫn có link nguồn. Đã thử cả hai câu hỏi mẫu qua OpenRouter. | Web chat xem trước nội dung. Luồng đăng Telegram dùng CLI với bước xác nhận. |
+| `rate_sources`, `dedupe_items`, `parse_time_range` | [rate_sources](../../starter_v0/tools/rate_sources/TOOL.md), [dedupe_items](../../starter_v0/tools/dedupe_items/TOOL.md), [parse_time_range](../../starter_v0/tools/parse_time_range/TOOL.md) | Xếp URL theo mức tin cậy; loại mục trùng; đổi cụm thời gian thành khoảng ngày. Các case G03, G04, G06, G10 kiểm tra việc chọn tool. | Chỉ nhìn tên miền, không đánh giá nội dung; tên miền giả không được tính là nguồn chính thức. Cụm thời gian không nhận ra trả `unrecognized`, không phải lỗi. |
+| Unit test 3 tool bổ sung | [test_tools_todo.py](../../starter_v0/tests/test_tools_todo.py) | Mỗi tool 4 test (đúng, dữ liệu xấu, lỗi trả dict). Toàn suite 132 đạt, 0 skipped, 0 lỗi. | Test offline, không gọi mạng. |
+| Web chat (Vercel) | https://k5-l3-b-day-03-delta-research-agent.vercel.app/, [index.html](../../starter_v0/public/index.html), [core.py](../../starter_v0/webapp/core.py) | Chat chạy trên Vercel; chọn phiên bản v0 đến hiện tại và bảng so sánh điểm; hiển thị từng lần gọi tool; gửi Telegram tới chat ID người dùng nhập. | Giới hạn 5 tin mỗi chat ID mỗi giờ (bộ đếm trong bộ nhớ, yếu trên serverless); phiên bản cũ không gửi được; chủ dự án tắt gửi bằng `DISABLE_SEND=1`. |
+
+Các con số "toàn suite" ở các dòng unit test phía trên ghi tại thời điểm từng tool được thêm; hiện tại toàn suite là 132 đạt, 0 skipped, 0 lỗi.
 
 Unit test phát hiện URL thiếu hostname và kiểm tra tool trả error dict. Case eval `G01_evidence_card_conflicting_reports` chỉ chấm model có chọn đúng tool.
 
@@ -211,38 +235,16 @@ Chỉ điền nếu nhóm làm bonus (ghi riêng, tối đa 10 điểm). Tool c�
 
 | Bonus | Evidence File | What Worked | Risk / Guardrail |
 |---|---|---|---|
-| Small Local Model | xem B7 |  |  |
-| Hơn 3 tool mới (≥ 4) |  |  |  |
-| `send` gửi thật lên Telegram sau xác nhận | `starter_v0/transcripts/v3_gemini_20261110T184506173013.transcript.json` | Luồng: agent hỏi `yes_no`, người dùng trả lời "Có, gửi đi", `send(confirmed=true)` trả `status: sent` | Bản web mặc định tắt `send`. Tin gửi vào chat Telegram cấu hình trong `.env`; rubric ghi "private channel của nhóm" nên cần xác nhận chat này đúng yêu cầu |
-| Test challenge (0 skipped / regression test) | `pytest` output |  |  |
+| Small Local Model | xem B7 | Nhóm chưa làm bonus này. |  |
+| Hơn 3 tool mới (≥ 4) | `starter_v0/tools/` | 6 tool nhóm tự viết: `build_evidence_card`, `build_metric_delta_card`, `trace_source_chain`, `rate_sources`, `dedupe_items`, `parse_time_range`. Mỗi tool có `TOOL.md`, đăng ký và từ 4 đến 5 test; các case G01 đến G04, G06, G07, G10 kiểm tra việc chọn tool. | Bộ chấm chỉ kiểm tra tên tool và tham số, không kiểm tra kết quả cuối của tool. |
+| `send` gửi thật lên Telegram sau xác nhận | `starter_v0/transcripts/v3_gemini_20261110T184506173013.transcript.json` | Luồng: agent hỏi `yes_no`, người dùng trả lời "Có, gửi đi", `send(confirmed=true)` trả `status: sent` | Bản web gửi tới chat ID mà người dùng nhập (giới hạn 5 tin mỗi chat ID mỗi giờ, chỉ phiên bản hiện tại gửi được, `DISABLE_SEND=1` tắt hẳn). Bản CLI gửi vào chat cấu hình trong `.env`; rubric ghi "private channel của nhóm" nên cần xác nhận chat này đúng yêu cầu |
+| Test challenge (0 skipped / regression test) | `pytest` output; [test_tools_todo.py](../../starter_v0/tests/test_tools_todo.py) | Điền 14 test còn skipped của các tool có sẵn: `pytest` 132 passed, 0 skipped. | Test offline dùng `fake_http`, không gọi mạng. |
 
-Test challenge: số bug tìm được trong tool có sẵn (nếu có), cách sửa, và test regression tương ứng.
+Test challenge: không có regression test cho tool có sẵn. Lỗi tìm được nằm ở provider Gemini (từ chối `additionalProperties`, HTTP 400), đã sửa trong `providers/gemini_provider.py`; chưa có test riêng cho lỗi này.
 
 ### B7. Small Local Model Challenge (bonus)
 
-Chỉ điền nếu nhóm làm bonus này.
-
-| Version | Model (provider) | Prompt/Tools | case_accuracy | tool_routing | argument | multiturn | Run File |
-|---|---|---|---|---|---|---|---|
-| v3 | (cloud) | v3 |  |  |  |  |  |
-| v3-<model> | (ollama) | v3 |  |  |  |  |  |
-| v3-<model> | (ollama) | v3 |  |  |  |  |  |
-| v4-local |  |  |  |  |  |  |  |
-| v5-local |  |  |  |  |  |  |  |
-
-Lỗi đặc thù của model nhỏ (đếm từ run JSON):
-
-| Failure Pattern | Count | Example Case | Fix Tried | Helped? |
-|---|---|---|---|---|
-| wrong / hallucinated tool |  |  |  |  |
-| invalid JSON args (`_invalid_json_arguments`) |  |  |  |  |
-| no tool call / answered directly |  |  |  |  |
-| missed `clarify` |  |  |  |  |
-| repeated / unnecessary calls |  |  |  |  |
-
-- Cái gì giúp model nhỏ gọi tool đúng hơn nhất? Bằng chứng?
-- Bản prompt tối ưu cho local chạy trên model cloud thì sao?
-- Khi nào nhóm sẽ chọn model local thay vì cloud cho agent này?
+Nhóm chưa làm bonus này: chưa có run model local nào trong repo.
 
 ## 5. Khó khăn và cách xử lý
 
@@ -250,24 +252,29 @@ Lỗi đặc thù của model nhỏ (đếm từ run JSON):
 
 - Lỗi mạng khi chạy eval: một lần chạy v0 có 1 case (M06) bị `ConnectError`, nên `provider_error_cases = 1` và run không hợp lệ theo rubric. Nhóm loại run đó và chạy lại v0 (xem B1).
 - Lỗi mạng khi gửi Telegram: lượt `send` đầu trong transcript 1 bị `ConnectionError`. Nhóm chạy lại phần Telegram, thành công ở transcript 2 (xem B4).
+- Gemini từ chối `additionalProperties`: các tool của Đạt khai báo `additionalProperties: false` trong `tools.yaml`; API Gemini trả HTTP 400 `Unknown name "additional_properties"`, nên `chat.py` và eval dùng Gemini đều lỗi (run v4 đầu tiên báo `provider_error` 20/20 và 10/10, đã xóa vì không hợp lệ). Có lẽ vì thế run group đầu tiên phải dùng `gpt-4o-mini`. Cách xử lý: lọc trường này trước khi gửi cho Gemini trong `providers/gemini_provider.py`, rồi chạy lại eval (hợp lệ).
+- Deploy Vercel mất nhiều vòng sửa: (1) Vercel nhầm `app.py` là điểm vào, báo `PYTHON_ENTRYPOINT_NOT_FOUND`: khai báo `api.chat:handler` trong `pyproject.toml` và loại file không dùng bằng `.vercelignore`; (2) `LAMBDA_SIZE_EXCEEDED` (vượt 225 MB): bỏ `includeFiles` trong `vercel.json` và ghim phiên bản thư viện; (3) `ValidationError` với `google-genai==1.0.0` do `additionalProperties`: lọc trường này trong `webapp/core.py`. Lỗi (3) tái hiện được bằng đúng phiên bản 1.0.0.
 
 ## 6. Tổng hợp đóng góp
 
 Chi tiết đóng góp của từng thành viên nằm trong [TEAM.md](../../TEAM.md) và các báo cáo cá nhân `report/team/MSSV_HoTen.md`.
 
+| Thành viên | Phần việc | Báo cáo cá nhân |
+|---|---|---|
+| Nguyễn Năng Thịnh | Giao diện UI, Live Chat, tổng hợp báo cáo | [2A202604028_NguyenNangThinh.md](2A202604028_NguyenNangThinh.md) |
+| Cao Trung Hiếu | Tích hợp Telegram; cài đặt CP1 đến CP2 (v0 đến v3); cải tiến giao diện chat và deploy Vercel; so sánh phiên bản và ranh giới gửi tin; 3 tool bổ sung; test challenge | [2A202603993_CaoTrungHieu.md](2A202603993_CaoTrungHieu.md) |
+| Vũ Đình Huy | CP4: 10 case eval nhóm và run group | [2A202603985_VuDinhHuy.md](2A202603985_VuDinhHuy.md) |
+| Lê Phạm Thành Đạt | CP3: 3 tool (`build_evidence_card`, `build_metric_delta_card`, `trace_source_chain`) và unit test | [2A202604027_LePhamThanhDat.md](2A202604027_LePhamThanhDat.md) |
+
 ## 7. Hạn chế và hướng cải thiện — B6. Reflection
 
-- Fix nào thuộc `system_prompt.md`?
-Bổ sung hướng dẫn để Agent nhận diện đúng ý định người dùng, lựa chọn tool phù hợp và xử lý trường hợp thiếu hoặc mâu thuẫn thông tin.
-
-- Fix nào thuộc `tools.yaml`?
-Mô tả rõ chức năng, input schema, kiểu dữ liệu và điều kiện sử dụng của từng tool để hạn chế truyền sai tham số.
-
-- Failure nào cần review thủ công thay vì chấm tự động?
-Những trường hợp có nguồn dữ liệu mâu thuẫn, thông tin không đầy đủ hoặc kết quả phụ thuộc vào ngữ cảnh và phán đoán của con người.
-- Nếu có thêm một vòng, nhóm sẽ thử giả thuyết nào?
-Nếu cải thiện mô tả tool và bổ sung ví dụ vào system prompt, tỷ lệ chọn đúng tool sẽ tăng và số lỗi gọi tool sẽ giảm.
+- Fix thuộc `system_prompt.md`: rule hỏi lại khi thiếu thông tin (không đoán), xác nhận `yes_no` trước khi gửi, rule chọn tool (tweet của người so với theo chủ đề, link thì `fetch`), câu ngoài phạm vi không gọi tool, và rule chọn tool cho 6 tool mới. Các rule này quyết định agent có gọi tool đúng lúc hay không (v1 tăng 0.05, v2 tăng 0.20).
+- Fix thuộc `tools.yaml`: quy ước tham số (từ khóa ngắn, tên tài khoản không có `@`, `topic=news`, `timeframe`, `Top/Latest`), mô tả khi nào dùng và không dùng từng tool, mô tả `send` (chỉ gửi khi `confirmed=true`), và schema của tool mới. Lưu ý Gemini không chấp nhận `additionalProperties` trong schema.
+- Cần review thủ công: G02 bị chấm sai vì khác chữ hoa chữ thường ("Tháng 9" và "tháng 9") dù tool chạy không lỗi; G10 thiếu `format` vì runner chỉ gọi model một lần và không đưa kết quả tool trở lại model; R12 bị chấm sai dù hỏi lại xin nội dung là hợp lý khi người dùng chưa đưa nội dung; G01 chỉ chấm routing nên phải đọc tay nhãn bằng chứng. Bộ chấm không đánh giá chất lượng câu trả lời cuối.
+- Nếu có thêm một vòng: thử rule riêng "mọi yêu cầu gửi hoặc đăng đều hỏi `yes_no`, kể cả khi chưa có nội dung" để sửa R12; rule "từ khóa tìm kiếm chỉ là từ người dùng nói" cho R03 (tái xuất hiện ở v4); mô tả gộp nhiều URL vào một lời gọi `rate_sources` cho G03 và G06; chạy mỗi version nhiều lần để đo độ dao động; mở rộng runner để đưa kết quả tool trở lại model.
 
 ## 8. Tài liệu tham khảo
 
--
+- Tài liệu của lab: `README.md`, `CHECKPOINTS.md`, `RUBRIC.md`, `RULES.md`, `SUBMISSION.md`, `docs/TOOL-SETUP.md`.
+- Dịch vụ và API dùng trong agent: Gemini API (gọi hàm), Tavily (`lookup`), Firecrawl (`fetch`), RapidAPI Twitter API45 (`timeline`, `social_search`), arXiv API (`papers`, `paper_text`), Telegram Bot API (`send`; core.telegram.org/bots/api).
+- Triển khai: tài liệu Vercel về Python runtime và entrypoint (vercel.com/docs/functions/runtimes/python).

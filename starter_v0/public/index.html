@@ -146,6 +146,20 @@
   td li { margin-bottom: 4px; font-size: .92rem; }
   .use { border: 2px solid var(--line); background: transparent; padding: 4px 12px; cursor: pointer; white-space: nowrap; }
   .use:hover { border-color: var(--blue); }
+
+  /* Giải thích từng phiên bản */
+  .vinfo { margin: 12px 0 0; border: 2px solid var(--line); padding: 8px 14px 12px; max-height: 360px; overflow: auto; }
+  .vinfo summary { cursor: pointer; font-weight: 600; }
+  .vinfo h4 { margin: 14px 0 4px; font-size: .78rem; font-weight: 600; color: var(--muted); }
+  .vinfo p, .vinfo li { font-size: .9rem; margin: 0 0 4px; }
+  .vinfo ul { margin: 0; padding-left: 18px; }
+  .vinfo .tries { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .vinfo .try { border: 2px solid var(--line); background: transparent; padding: 3px 10px; font-size: .82rem; cursor: pointer; }
+  .vinfo .try:hover { border-color: var(--blue); }
+  details.more { margin-top: 8px; }
+  details.more summary { cursor: pointer; font-size: .86rem; color: var(--blue); }
+  details.more h4 { margin: 12px 0 4px; font-size: .76rem; font-weight: 600; color: var(--muted); }
+  details.more p { margin: 0 0 4px; font-size: .88rem; }
 </style>
 </head>
 <body>
@@ -172,6 +186,10 @@
         <div class="picker-buttons" id="picker" role="group" aria-label="Phiên bản agent"></div>
       </div>
       <p class="note" id="pickerNote"></p>
+      <details class="vinfo" id="vinfoWrap" open>
+        <summary>giải thích phiên bản đang chọn</summary>
+        <div id="versionInfo"></div>
+      </details>
       <form class="composer" id="form">
         <input id="text" autocomplete="off" placeholder="nhập câu hỏi" maxlength="2000" aria-label="Câu hỏi" required>
         <button class="go" id="btn" type="submit" aria-label="Gửi">&rarr;</button>
@@ -239,12 +257,36 @@ let VERSIONS = [], version = "current";
 try { version = localStorage.getItem("version") || "current"; } catch (e) {}
 const pickerBox = $("picker"), pickerNote = $("pickerNote");
 function scoreText(v) { return v.score == null ? "chưa đo điểm" : v.score.toFixed(2) + " (" + v.passed + "/" + v.total + " câu đúng)"; }
+const DEMO_QUESTIONS = [
+  "Tóm tắt 5 tweet mới nhất giúp mình",
+  "Tin tức AI hôm nay có gì nổi bật?",
+  "Đăng bản tin này lên Telegram giúp mình"
+];
+function list(items, render) { return items && items.length ? "<ul>" + items.map(i => "<li>" + render(i) + "</li>").join("") + "</ul>" : ""; }
+function explainHtml(v, withTries) {
+  let h = "";
+  if (v.headline) h += "<p><b>" + esc(v.headline) + "</b></p>";
+  if (v.hypothesis) h += "<h4>giả thuyết</h4><p>" + esc(v.hypothesis) + "</p>";
+  if (v.prompt_changes && v.prompt_changes.length) h += "<h4>sửa ở prompt</h4>" + list(v.prompt_changes, esc);
+  if (v.tool_changes && v.tool_changes.length) h += "<h4>sửa ở mô tả tool</h4>" + list(v.tool_changes, esc);
+  if (v.behavior && v.behavior.length) h += "<h4>hành vi quan sát được</h4>" + list(v.behavior, b => "<b>" + esc(b.ask) + "</b> → " + esc(b.result));
+  if (v.errors && v.errors.length) h += "<h4>câu còn sai (" + v.errors.length + ")</h4>" + list(v.errors, e => "<b>" + esc(e.id) + "</b>: " + esc(e.what));
+  else if (v.errors) h += "<h4>câu còn sai</h4><p>Không có.</p>";
+  if (v.why) h += "<h4>vì sao điểm như vậy</h4><p>" + esc(v.why) + "</p>";
+  if (withTries) h += "<h4>tự thử với phiên bản này</h4><div class='tries'>" + DEMO_QUESTIONS.map(q => "<button type='button' class='try' data-q='" + esc(q) + "'>" + esc(q) + "</button>").join("") + "</div>";
+  return h;
+}
 function showVersion() {
   pickerBox.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.id === version ? "true" : "false"));
   document.querySelectorAll("#compareBody tr").forEach(r => r.classList.toggle("on", r.dataset.id === version));
   const v = VERSIONS.find(x => x.id === version);
   pickerNote.textContent = v ? "Đang dùng: " + v.label + " · " + scoreText(v) + (version === "current" ? "" : ". Phiên bản cũ chỉ để so sánh, không gửi được Telegram.") : "";
+  $("versionInfo").innerHTML = v ? explainHtml(v, true) : "";
 }
+$("versionInfo").addEventListener("click", e => {
+  const b = e.target.closest("button.try");
+  if (b) { input.value = b.dataset.q; input.focus(); }
+});
 function setVersion(id) {
   if (id === version) return;
   version = id;
@@ -263,7 +305,7 @@ function renderVersions(data) {
     tr.innerHTML = "<th scope='row'>" + esc(v.label) + "</th>" +
       "<td class='score'>" + (v.score == null ? "<span class='na'>chưa đo</span>"
         : "<b>" + v.score.toFixed(2) + "</b><span class='bar'><i style='width:" + pct + "%'></i></span><small>" + v.passed + "/" + v.total + " câu đúng</small>") + "</td>" +
-      "<td><ul>" + v.changes.map(c => "<li>" + esc(c) + "</li>").join("") + "</ul></td>" +
+      "<td><ul>" + v.changes.map(c => "<li>" + esc(c) + "</li>").join("") + "</ul><details class='more'><summary>giải thích chi tiết</summary>" + explainHtml(v, false) + "</details></td>" +
       "<td class='fails'>" + (v.failed == null ? "<span class='na'>chưa đo</span>" : v.failed.length ? esc(v.failed.join(", ")) : "không có") + "</td><td></td>";
     const use = el("button", "use", "dùng bản này"); use.type = "button";
     use.onclick = () => { setVersion(v.id); window.scrollTo({top: 0, behavior: "smooth"}); };

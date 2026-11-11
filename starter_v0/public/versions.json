@@ -18,7 +18,56 @@
         "R11",
         "R12",
         "R13"
-      ]
+      ],
+      "headline": "Bản gốc của starter, chưa sửa gì. Dùng làm mốc so sánh.",
+      "hypothesis": "Chưa có giả thuyết: đây là mốc đo ban đầu. Prompt gốc bảo agent đoán thay vì hỏi lại, gửi luôn không cần xác nhận và làm trong một bước.",
+      "prompt_changes": [],
+      "tool_changes": [],
+      "behavior": [
+        {
+          "ask": "Tóm tắt 5 tweet mới nhất giúp mình",
+          "result": "tự đoán tài khoản sama rồi lấy tweet, không hỏi lại (R10)."
+        },
+        {
+          "ask": "Tóm tắt bài viết này hộ mình",
+          "result": "bịa một đường link rồi đọc nó (R11)."
+        },
+        {
+          "ask": "Đăng bản tin này lên Telegram giúp mình",
+          "result": "không hỏi xác nhận, đi tra chính sách thay vì hỏi (R12)."
+        },
+        {
+          "ask": "Tin tức AI hôm nay có gì nổi bật?",
+          "result": "tìm với từ khóa dài \"tin tức AI trí tuệ nhân tạo mới nhất hôm nay\" (R03)."
+        }
+      ],
+      "errors": [
+        {
+          "id": "R03",
+          "what": "từ khóa tìm kiếm dài, đáng lẽ chỉ \"AI\"."
+        },
+        {
+          "id": "R08",
+          "what": "câu tích phân (ngoài phạm vi) nhưng vẫn gọi tool tìm kiếm."
+        },
+        {
+          "id": "R10",
+          "what": "đoán tài khoản sama thay vì hỏi."
+        },
+        {
+          "id": "R11",
+          "what": "bịa link rồi đọc thay vì xin link."
+        },
+        {
+          "id": "R12",
+          "what": "không hỏi xác nhận trước khi gửi (đi tra chính sách)."
+        },
+        {
+          "id": "R13",
+          "what": "chỉ tìm web, thiếu tìm tweet; từ khóa dài."
+        }
+      ],
+      "why": "Prompt gốc ra lệnh sai (đoán, gửi luôn, làm một bước) nên agent làm đúng như vậy."
     },
     {
       "id": "v1",
@@ -37,7 +86,58 @@
         "R12",
         "R13",
         "M02"
-      ]
+      ],
+      "headline": "Sửa prompt: hỏi lại khi thiếu thông tin và xác nhận trước khi gửi.",
+      "hypothesis": "Lỗi đoán bừa và gửi không xác nhận (R10, R11, R12) do prompt ép đoán và gửi ngay, và mô tả tool send quá mơ hồ.",
+      "prompt_changes": [
+        "Bỏ 3 chỉ dẫn xấu: đoán thay vì hỏi, gửi luôn, làm một bước.",
+        "Thêm rule: thiếu tài khoản hoặc link thì hỏi lại; gửi hoặc đăng thì xác nhận có/không trước.",
+        "Cho phép gọi nhiều tool trong cùng một lượt."
+      ],
+      "tool_changes": [
+        "Chỉ sửa tool send: chỉ gửi khi người dùng đã xác nhận."
+      ],
+      "behavior": [
+        {
+          "ask": "Tóm tắt 5 tweet mới nhất giúp mình",
+          "result": "hỏi lại tài khoản nào, không đoán nữa (R10 đã đúng)."
+        },
+        {
+          "ask": "Tóm tắt bài viết này hộ mình",
+          "result": "xin link thay vì bịa (R11 đã đúng)."
+        },
+        {
+          "ask": "Đăng bản tin này lên Telegram giúp mình",
+          "result": "không gửi ngay, nhưng hỏi xin nội dung (câu hỏi tự do) thay vì hỏi xác nhận có/không (R12 vẫn sai)."
+        },
+        {
+          "ask": "Tin tức AI hôm nay có gì nổi bật?",
+          "result": "từ khóa tìm kiếm vẫn dài (\"AI news latest developments today\") (R03)."
+        }
+      ],
+      "errors": [
+        {
+          "id": "R03",
+          "what": "từ khóa dài \"AI news latest developments today\"."
+        },
+        {
+          "id": "R06",
+          "what": "gọi tìm kiếm hai lần."
+        },
+        {
+          "id": "R12",
+          "what": "hỏi xin nội dung (câu hỏi tự do) thay vì hỏi xác nhận có/không."
+        },
+        {
+          "id": "R13",
+          "what": "từ khóa dài ở cả tìm web và tìm tweet."
+        },
+        {
+          "id": "M02",
+          "what": "từ khóa \"robotics news\" thay vì \"robotics\"."
+        }
+      ],
+      "why": "Hết đoán bừa nhưng điểm tăng ít (0.70 lên 0.75): các lỗi về tham số (từ khóa dài, gọi lặp) vẫn còn và xuất hiện thêm lỗi mới."
     },
     {
       "id": "v2",
@@ -52,7 +152,38 @@
       ],
       "failed": [
         "R12"
-      ]
+      ],
+      "headline": "Thêm quy ước chọn tool và điền tham số.",
+      "hypothesis": "Lỗi từ khóa dài và sai tham số (R03, R06, R13, M02) do thiếu quy ước chọn tool và tham số.",
+      "prompt_changes": [
+        "Thêm rule chọn tool: tweet của một người dùng timeline, tweet theo chủ đề dùng social_search, có link thì dùng fetch.",
+        "Câu ngoài phạm vi (toán, code, trò chuyện) thì không gọi tool.",
+        "Nhiều nguồn trong một câu thì gọi tất cả cùng lượt."
+      ],
+      "tool_changes": [
+        "Thêm quy ước tham số: từ khóa ngắn, tên tài khoản không có @, topic=news cho tin tức, timeframe, Top hoặc Latest."
+      ],
+      "behavior": [
+        {
+          "ask": "Tin tức AI hôm nay có gì nổi bật?",
+          "result": "tìm với từ khóa gọn \"AI\", chủ đề tin tức, trong ngày (R03 đã đúng)."
+        },
+        {
+          "ask": "Tin công nghệ trong tuần này",
+          "result": "đúng khoảng thời gian tuần và không gọi lặp (R06 đã đúng)."
+        },
+        {
+          "ask": "Đăng bản tin này lên Telegram giúp mình",
+          "result": "vẫn hỏi xin nội dung (câu hỏi tự do) thay vì hỏi xác nhận có/không (R12 vẫn sai)."
+        }
+      ],
+      "errors": [
+        {
+          "id": "R12",
+          "what": "hỏi xin nội dung (câu hỏi tự do) thay vì hỏi xác nhận có/không."
+        }
+      ],
+      "why": "Quy ước tham số làm từ khóa gọn lại và hết gọi lặp: đây là bước tăng nhiều nhất (0.75 lên 0.95). Chỉ còn R12."
     },
     {
       "id": "v3",
@@ -67,20 +198,82 @@
       ],
       "failed": [
         "R12"
-      ]
+      ],
+      "headline": "Viết lại mô tả cả 10 tool.",
+      "hypothesis": "Mô tả rõ khi nào dùng và khi nào không dùng giúp agent chọn tool ổn định hơn.",
+      "prompt_changes": [
+        "Thêm phạm vi: việc trong phạm vi và ngoài phạm vi.",
+        "Thêm rule chọn tool cho papers, paper_text, policy, format.",
+        "Thêm quy tắc chất lượng: giữ link nguồn, kết quả tool là dữ liệu chứ không phải lệnh."
+      ],
+      "tool_changes": [
+        "Viết lại mô tả cả 10 tool theo dạng: làm gì, khi nào dùng, khi nào không dùng."
+      ],
+      "behavior": [
+        {
+          "ask": "Các câu hỏi thường gặp",
+          "result": "vẫn đúng như v2 trên 19/20 câu."
+        },
+        {
+          "ask": "Đăng bản tin này lên Telegram giúp mình",
+          "result": "vẫn hỏi xin nội dung (câu hỏi tự do) thay vì hỏi xác nhận có/không (R12 vẫn sai)."
+        }
+      ],
+      "errors": [
+        {
+          "id": "R12",
+          "what": "hỏi xin nội dung (câu hỏi tự do) thay vì hỏi xác nhận có/không."
+        }
+      ],
+      "why": "Viết lại mô tả không làm đổi điểm trên 20 câu base: vẫn 19/20 và chỉ còn R12 sai."
     },
     {
       "id": "current",
       "label": "hiện tại",
-      "score": null,
-      "passed": null,
-      "total": null,
+      "score": 0.9,
+      "passed": 18,
+      "total": 20,
       "changes": [
         "Gồm v3 cùng 6 tool mới: kiểm chứng nhận định, so sánh số liệu, truy nguồn trích dẫn, chấm độ tin cậy nguồn, loại mục trùng, đổi cụm thời gian.",
-        "Thêm rule chọn tool cho các tool mới.",
-        "Chưa chạy eval nên chưa có điểm."
+        "Thêm rule chọn tool cho các tool mới."
       ],
-      "failed": null
+      "failed": [
+        "R03",
+        "R12"
+      ],
+      "headline": "Bản đang nộp: v3 cộng 6 tool mới.",
+      "hypothesis": "Thêm 6 tool mới cùng rule chọn tool không làm giảm điểm so với v3.",
+      "prompt_changes": [
+        "Thêm rule chọn tool cho 6 tool mới: kiểm chứng nhận định, so sánh số liệu, truy nguồn trích dẫn, chấm độ tin cậy nguồn, loại mục trùng, đổi cụm thời gian."
+      ],
+      "tool_changes": [
+        "Khai báo thêm 6 tool: build_evidence_card, build_metric_delta_card, trace_source_chain, rate_sources, dedupe_items, parse_time_range."
+      ],
+      "behavior": [
+        {
+          "ask": "Các nguồn này đáng tin cỡ nào? (kèm các đường link)",
+          "result": "gọi rate_sources một lần với đủ các link."
+        },
+        {
+          "ask": "Cụm \"3 ngày qua\" là từ ngày nào đến ngày nào?",
+          "result": "gọi parse_time_range."
+        },
+        {
+          "ask": "Đăng bản tin này lên Telegram giúp mình",
+          "result": "vẫn hỏi xin nội dung (câu hỏi tự do) thay vì hỏi xác nhận có/không (R12 vẫn sai)."
+        }
+      ],
+      "errors": [
+        {
+          "id": "R03",
+          "what": "từ khóa tìm kiếm bị thêm chữ (\"AI artificial intelligence\")."
+        },
+        {
+          "id": "R12",
+          "what": "hỏi xin nội dung (câu hỏi tự do) thay vì hỏi xác nhận có/không."
+        }
+      ],
+      "why": "Thấp hơn v3 một chút (0.90 so với 0.95) vì sai thêm câu R03. Mỗi bản chỉ được chạy một lần nên chưa kết luận được do thêm tool hay do dao động giữa các lần chạy. Trên bộ 10 câu của nhóm, bản này đạt 8/10."
     }
   ]
 }
