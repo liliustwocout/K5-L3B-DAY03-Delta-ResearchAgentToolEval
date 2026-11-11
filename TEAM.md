@@ -52,6 +52,7 @@ Sao chép mục dưới đây cho từng thành viên.
 
 - Source code phần UI và Live Chat trong repository.
 - File báo cáo tổng thể của dự án (group_report.md và các tài liệu liên quan).
+- Commit: b690b9e6f3b3712139c669a92a3eb6acbb7c57a1, df1e05cbd6d4eddbf16a1fe78b2d8135a3500ba6, 898c56b8ecbfcec66eafb3bc44f4abb8029cde6d
 
 ## HoVaTen-MSSV
 
