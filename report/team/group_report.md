@@ -302,7 +302,7 @@ Chi tiết đóng góp của từng thành viên nằm trong [TEAM.md](../../TEA
 | Thành viên | Phần việc | Báo cáo cá nhân |
 |---|---|---|
 | Nguyễn Năng Thịnh | Giao diện UI, Live Chat, tổng hợp báo cáo | [2A202604028_NguyenNangThinh.md](2A202604028_NguyenNangThinh.md) |
-| Cao Trung Hiếu | Tích hợp Telegram; cài đặt CP1 đến CP2 (v0 đến v3); cải tiến giao diện chat và deploy Vercel; so sánh phiên bản và ranh giới gửi tin; 3 tool bổ sung; test challenge | [2A202603993_CaoTrungHieu.md](2A202603993_CaoTrungHieu.md) |
+| Cao Trung Hiếu | Tích hợp Telegram; cài đặt CP1 đến CP2 (v0 đến v3); cải tiến giao diện chat và deploy Vercel; so sánh phiên bản và ranh giới gửi tin; 3 tool bổ sung; test challenge; bonus model local (2 model, 2 vòng tối ưu) | [2A202603993_CaoTrungHieu.md](2A202603993_CaoTrungHieu.md) |
 | Vũ Đình Huy | CP4: 10 case eval nhóm và run group | [2A202603985_VuDinhHuy.md](2A202603985_VuDinhHuy.md) |
 | Lê Phạm Thành Đạt | CP3: 3 tool (`build_evidence_card`, `build_metric_delta_card`, `trace_source_chain`) và unit test | [2A202604027_LePhamThanhDat.md](2A202604027_LePhamThanhDat.md) |
 
@@ -315,6 +315,16 @@ Chi tiết đóng góp của từng thành viên nằm trong [TEAM.md](../../TEA
 
 ## 8. Tài liệu tham khảo
 
-- Tài liệu của lab: `README.md`, `CHECKPOINTS.md`, `RUBRIC.md`, `RULES.md`, `SUBMISSION.md`, `docs/TOOL-SETUP.md`.
-- Dịch vụ và API dùng trong agent: Gemini API (gọi hàm), Tavily (`lookup`), Firecrawl (`fetch`), RapidAPI Twitter API45 (`timeline`, `social_search`), arXiv API (`papers`, `paper_text`), Telegram Bot API (`send`; core.telegram.org/bots/api).
-- Triển khai: tài liệu Vercel về Python runtime và entrypoint (vercel.com/docs/functions/runtimes/python).
+- Tài liệu của lab: `README.md` (Step 7 cho bonus model local), `CHECKPOINTS.md`, `RUBRIC.md`, `RULES.md`, `SUBMISSION.md`, `docs/TOOL-SETUP.md`.
+- Dịch vụ và API dùng trong agent:
+  - Gemini API, gọi hàm (function calling): https://ai.google.dev/gemini-api/docs/function-calling
+  - Tavily (`lookup`): https://docs.tavily.com
+  - Firecrawl (`fetch`): https://docs.firecrawl.dev
+  - Twitter API45 trên RapidAPI (`timeline`, `social_search`): https://rapidapi.com/alexanderxbx/api/twitter-api45
+  - arXiv API (`papers`, `paper_text`): https://info.arxiv.org/help/api/index.html
+  - Telegram Bot API (`send`): https://core.telegram.org/bots/api
+- Model local (bonus), chạy bằng Ollama qua endpoint tương thích OpenAI (`providers/ollama_provider.py`):
+  - llama3.2:3b: https://ollama.com/library/llama3.2
+  - qwen3:4b: https://ollama.com/library/qwen3
+- Triển khai: Vercel Python runtime: https://vercel.com/docs/functions/runtimes/python
+- Công cụ AI hỗ trợ: Claude Code, dùng để viết code, test, phân tích log và soạn báo cáo (chi tiết ở báo cáo cá nhân).

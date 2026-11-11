@@ -62,17 +62,19 @@ Sao chép mục dưới đây cho từng thành viên.
 - Cài đặt CP1 đến CP2: baseline v0, tối ưu v1 đến v3, `version_log.csv`, phân tích lỗi.
 - Cải tiến giao diện chat và triển khai (deploy) lên Vercel.
 - So sánh các phiên bản (chọn phiên bản, bảng so sánh) và ranh giới khi gửi tin.
+- Bonus Small Local Model: chạy model local qua Ollama, tối ưu prompt và tool cho model nhỏ.
 
 ### Đóng góp cụ thể
 
 - Điểm base eval tăng từ 0.70 (v0) lên 0.95 (v2, v3); bản hiện tại (v4, thêm 6 tool) đạt 0.90.
+- Chạy base eval trên 2 model local bằng Ollama với prompt v3: qwen3:4b 0.90, llama3.2:3b 0.25. Làm 2 vòng tối ưu cho llama3.2:3b (`v4-local`: prompt ngắn kèm ví dụ, lên 0.40; `v5-local`: bớt xuống 6 tool, giữ 0.40) và kiểm tra ngược trên Gemini được 1.00.
 - 3 tool bổ sung `rate_sources`, `dedupe_items`, `parse_time_range` kèm 12 unit test; điền 14 test còn skipped (132 passed, 0 skipped).
 - Giao diện web chọn phiên bản agent, bảng so sánh, và nhập chat ID Telegram riêng cho từng người.
 
 ### Bằng chứng
 
 - Báo cáo cá nhân: [2A202603993_CaoTrungHieu.md](report/team/2A202603993_CaoTrungHieu.md)
-- Commit: `1f041c1`, `90422c3`, `f49d712`, `6d997fa`, `ebe2a3d`, `9f8e764`, `0ad7384`, `0abe7ef`
+- Commit: `1f041c1`, `90422c3`, `f49d712`, `6d997fa`, `ebe2a3d`, `9f8e764`, `0ad7384`, `0abe7ef`, `ef0561b` (model local)
 - Giao diện đang chạy: https://k5-l3-b-day-03-delta-research-agent.vercel.app/
 
 ## VuDinhHuy-2A202603985
