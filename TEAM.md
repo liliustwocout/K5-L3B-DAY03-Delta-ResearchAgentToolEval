@@ -5,7 +5,7 @@
 - Tên nhóm:Delta
 - Lớp: L3B
 - Repo nhóm: https://github.com/liliustwocout/K5-L3B-DAY03-Delta-ResearchAgentToolEval
-- URL repo, nhánh nộp, commit chốt: https://github.com/liliustwocout/K5-L3B-DAY03-Delta-ResearchAgentToolEval · nhánh `main` · commit chốt: (điền sau khi commit cuối)
+- URL repo, nhánh nộp, commit chốt: https://github.com/liliustwocout/K5-L3B-DAY03-Delta-ResearchAgentToolEval · nhánh `main` · commit chốt: `ef0561be26b996df1a9e0519601eeff61e7cfe40`
 
 ## Thành viên
 
