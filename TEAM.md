@@ -13,7 +13,7 @@
 | --: | ------ | ---- | ----- | ------ | ------- |
 |   1 | Nguyễn Năng Thịnh | 2A202604028 | thinh010705@gmail.com | Thinh010705 | Thành viên |
 |   2 | Cao Trung Hiếu | 2A202603993 | 26ai.hieuct@vinuni.edu.vn | HieuCaoTlu | CP1–CP2 · Telegram, giao diện chat và deploy |
-|   3 | Vũ Đình Huy | 2A202603985 | huyvudinh1608@gmail.com |        | CP4 · Eval nhóm 10 case |
+|   3 | Vũ Đình Huy | 2A202603985 | huyvudinh1608@gmail.com | VNno1TH | CP4 · Eval nhóm 10 case |
 |   4 | Lê Phạm Thành Đạt | 2A202604027 | 26ai.datlpt@vinuni.edu.vn | liliustwocout | CP3 · Tool mới và unit test |
 
 ## Cá nhân
@@ -75,23 +75,28 @@ Sao chép mục dưới đây cho từng thành viên.
 - Commit: `1f041c1`, `90422c3`, `f49d712`, `6d997fa`, `ebe2a3d`, `9f8e764`, `0ad7384`, `0abe7ef`
 - Giao diện đang chạy: https://k5-l3-b-day-03-delta-research-agent.vercel.app/
 
-## VuDinhHuy_2A202603985
+## VuDinhHuy-2A202603985
 
 ### Phần việc phụ trách
 
-- CP4 · Eval nhóm 10 case: xây dựng bộ đánh giá riêng của nhóm (5 case một lượt, 5 case nhiều lượt), chạy group eval và phân tích kết quả.
+- Tôi phụ trách **CP4 — Eval nhóm 10 case**. Nhiệm vụ gồm hoàn thiện bộ đánh giá riêng của nhóm với 5 case single turn và 5 case multi turn, kiểm tra việc model chọn tool và truyền tham số, chạy eval bằng API thật, lưu run JSON và tổng hợp kết quả vào bảng B3 của báo cáo nhóm.
+
+- Bộ case tập trung vào các tình huống liên quan đến tool mới của nhóm, việc dùng thông tin từ lịch sử hội thoại, không gọi tool khi không cần thiết và hỏi xác nhận trước khi gửi Telegram. Sản phẩm bàn giao gồm `eval_group.json`, run `--suite group` và phần phân tích B3.
+
 
 ### Đóng góp cụ thể
 
-- Hoàn thiện đúng 10 case trong `eval_group.json`, kiểm tra việc model chọn đúng 5 tool mới, dùng thông tin từ lịch sử hội thoại, không gọi tool khi không cần và hỏi xác nhận trước khi gửi.
-- Chạy group eval bằng OpenAI `gpt-4o-mini` (run hợp lệ 10/10 câu, điểm 6/10 = 0.60) và phân tích lỗi G03, G06, G08, G10 cùng trường hợp G02 chấm PASS nhưng tool lỗi.
-- Hoàn thiện bảng B3 trong báo cáo nhóm, nêu rõ giới hạn của phép đo.
+- **Hoàn thiện dữ liệu đánh giá.** Chuẩn hóa đúng 10 case, mỗi case có ID riêng, `phase="B"`, `query` hoặc `turns`, `failure_type`, `expect` và `metadata.what_it_tests`. Bổ sung các tham số cần kiểm tra như danh sách URL, giá trị, kỳ đo và đơn vị; cố định ngày tham chiếu ở G04 để kết quả không phụ thuộc ngày chạy. Chỉ đưa vào `expect.tool_calls[].args` các tham số quyết định hành vi, tránh ép model phải dùng nguyên văn câu hỏi hoặc tên metric.
 
 ### Bằng chứng
 
-- Báo cáo cá nhân: [2A202603985_VuDinhHuy.md](report/team/2A202603985_VuDinhHuy.md)
-- Bộ case: [eval_group.json](starter_v0/data/eval_group.json); run group: [v3_B_group_openai_20261110T233006708870.json](starter_v0/runs/v3_B_group_openai_20261110T233006708870.json)
-- Commit: `f0efde3` (push cp4), `0a26005` (báo cáo cá nhân)
+Các sản phẩm và mã nguồn dùng để đối chiếu:
+
+- [Bộ 10 case của nhóm](../../starter_v0/data/eval_group.json): dữ liệu đầu vào, kỳ vọng và mục đích từng case.
+- [Run group thực tế](../../starter_v0/runs/v3_B_group_openai_20261110T233006708870.json): cấu hình, hash artifact, toàn bộ lời gọi tool, kết quả thực thi và điểm chấm.
+- [Bảng B3 — Team Eval Cases](group_report.md#b3-team-eval-cases): kết quả từng case, phân tích lỗi và giới hạn phép đo.
+- [run_eval.py](../../starter_v0/run_eval.py) và [agent.py](../../starter_v0/agent.py): đối chiếu cách xử lý lịch sử hội thoại, chấm args và thực thi tool.
+- Commit lưu sản phẩm CP4 trong lịch sử repo: `f0efde3` — `push cp4`.
 
 ## LePhamThanhDat_2A202604027
 
